@@ -268,7 +268,18 @@ const SUPABASE_URL = 'https://tuubqxnphoifqjbumgxa.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dWJxeG5waG9pZnFqYnVtZ3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDQ2MjAsImV4cCI6MjA5NDEyMDYyMH0.U0Tdp6GUBZMF16z00WvxmMTRKtWaJQEX954oy_w70Q0';
 // ═══════════════════════════════════════════════════════
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Singleton Supabase client — prevents multiple instance warning
+if (!window._sbClient) {
+  window._sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      storageKey: 'gcc-portfolio-auth',
+      autoRefreshToken: true,
+      detectSessionInUrl: false
+    }
+  });
+}
+const sb = window._sbClient;
 
 const KPI_DEFS = [
   {id:'sla',  name:'SLA Adherence',          target:95,  unit:'%',   higher:true},
@@ -308,18 +319,28 @@ document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==
 
 async function handleSignOut(){await sb.auth.signOut();}
 
-sb.auth.onAuthStateChange(async(event,session)=>{
-  console.log('Auth event:', event, session?.user?.email);
-  if(session?.user){
-    currentUser=session.user;
-    console.log('Loading profile...');
+// On page load, check for existing session first
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
     await loadProfile();
-    console.log('Loading data...');
     await loadData();
-    console.log('Showing app...');
     try { showApp(); } catch(e) { console.error('showApp error:', e); }
   } else {
-    currentUser=null; userProfile=null; canEdit=false; projects=[];
+    document.getElementById('login-screen').style.display='flex';
+  }
+})();
+
+// Then listen for auth changes (login/logout)
+sb.auth.onAuthStateChange(async(event, session) => {
+  if (event === 'SIGNED_IN' && session?.user && !currentUser) {
+    currentUser = session.user;
+    await loadProfile();
+    await loadData();
+    try { showApp(); } catch(e) { console.error('showApp error:', e); }
+  } else if (event === 'SIGNED_OUT') {
+    currentUser = null; userProfile = null; canEdit = false; projects = [];
     document.getElementById('app').style.display='none';
     document.getElementById('login-screen').style.display='flex';
   }
