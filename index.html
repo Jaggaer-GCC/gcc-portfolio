@@ -309,19 +309,21 @@ document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==
 async function handleSignOut(){await sb.auth.signOut();}
 
 sb.auth.onAuthStateChange(async(event,session)=>{
-  console.log('Auth state change:', event, session?.user?.email);
+  console.log('Auth event:', event, session?.user?.email);
   if(session?.user){
     currentUser=session.user;
+    console.log('Loading profile...');
     await loadProfile();
+    console.log('Loading data...');
     await loadData();
-    showApp();
+    console.log('Showing app...');
+    try { showApp(); } catch(e) { console.error('showApp error:', e); }
   } else {
     currentUser=null; userProfile=null; canEdit=false; projects=[];
     document.getElementById('app').style.display='none';
     document.getElementById('login-screen').style.display='flex';
   }
 });
-
 
 async function loadProfile(){
   const {data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
@@ -366,16 +368,20 @@ function showApp(){
 function nav(view,el){
   document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
   if(el) el.classList.add('active');
+  else { const t=document.querySelector(`[onclick*="nav('${view}'"]`); if(t) t.classList.add('active'); }
   renderView(view);
 }
-function renderView(view){
+async function renderView(view){
   currentView=view;
   const titles={dashboard:['Dashboard','Portfolio overview — Global Customer Care'],projects:['Projects','All projects in the GCC portfolio'],tasks:['All Tasks','Tasks across all active projects'],milestones:['Milestones','Upcoming and completed milestones'],kpis:['KPI Tracker','Current performance vs targets'],blockers:['Active Blockers','Issues blocking project progress'],team:['Team & Access','User management and permissions']};
   const [t,s]=titles[view]||[view,''];
   document.getElementById('page-title').textContent=t;
   document.getElementById('page-sub').textContent=s;
   const views={dashboard:renderDashboard,projects:renderProjects,tasks:renderAllTasks,milestones:renderMilestones,kpis:renderKPIs,blockers:renderBlockers,team:renderTeam};
-  document.getElementById('content').innerHTML=(views[view]||(() =>''))();
+  const fn=views[view]||(() =>'');
+  document.getElementById('content').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3)"><i class="ti ti-loader-2 spin" style="font-size:24px"></i></div>';
+  const html=await fn();
+  document.getElementById('content').innerHTML=html||'';
 }
 
 function updateBadges(){
@@ -401,7 +407,7 @@ const onTrack=(k,v)=>k.higher?v>=k.target*0.95:v<=k.target*1.1;
 const pctBar=(k,v)=>Math.max(3,Math.min(100,k.higher?v/k.target*100:(2-v/k.target)*100));
 
 // ── Dashboard ─────────────────────────────────────────
-function renderDashboard(){
+async function renderDashboard(){
   const total=projects.length,active=projects.filter(p=>p.status==='In Progress').length;
   const completed=projects.filter(p=>p.status==='Completed').length;
   const atRisk=projects.filter(p=>p.rag==='R'||p.rag==='A').length;
@@ -431,7 +437,7 @@ function renderDashboard(){
 }
 
 // ── Projects ──────────────────────────────────────────
-function renderProjects(){
+async function renderProjects(){
   const types=['All','Strategic','Operational','Process','Transformation','Workforce','Quality'];
   const filtered=filterProjects==='All'?projects:projects.filter(p=>p.type===filterProjects);
   return`
@@ -519,7 +525,7 @@ function openProjectDetail(id){
 }
 
 // ── All Tasks ─────────────────────────────────────────
-function renderAllTasks(){
+async function renderAllTasks(){
   const all=projects.flatMap(p=>(p.tasks||[]).map(t=>({...t,pn:p.name,pid:p.id})));
   const open=all.filter(t=>!t.done),done=all.filter(t=>t.done);
   const shown=filterTasks==='open'?open:done;
@@ -546,7 +552,7 @@ function renderAllTasks(){
 }
 
 // ── Milestones ────────────────────────────────────────
-function renderMilestones(){
+async function renderMilestones(){
   const all=projects.flatMap(p=>(p.milestones||[]).map(m=>({...m,pn:p.name})));
   const up=all.filter(m=>!m.done).sort((a,b)=>new Date(a.date)-new Date(b.date));
   const done=all.filter(m=>m.done);
@@ -563,7 +569,7 @@ function renderMilestones(){
 }
 
 // ── KPIs ──────────────────────────────────────────────
-function renderKPIs(){
+async function renderKPIs(){
   return`
   <div style="margin-bottom:20px"><div class="section-title" style="margin-bottom:4px">GCC KPI Tracker</div><div style="font-size:12px;color:var(--text3)">Current performance vs targets.</div></div>
   ${KPI_DEFS.map(k=>{
@@ -583,7 +589,7 @@ function renderKPIs(){
 }
 
 // ── Blockers ──────────────────────────────────────────
-function renderBlockers(){
+async function renderBlockers(){
   const all=projects.flatMap(p=>(p.blockers||[]).map(b=>({...b,pn:p.name,pid:p.id})));
   if(all.length===0) return`<div class="empty-state"><i class="ti ti-circle-check" style="color:var(--green)"></i><div class="empty-state-title" style="color:var(--text)">No active blockers</div><div>All projects are unblocked.</div></div>`;
   return`<div class="section-title" style="margin-bottom:16px">${all.length} Active Blocker${all.length!==1?'s':''}</div>
