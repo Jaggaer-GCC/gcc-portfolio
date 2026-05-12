@@ -295,10 +295,11 @@ async function handleLogin(){
   document.getElementById('login-btn-text').style.display='none';
   document.getElementById('login-spin').style.display='inline';
   const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
-  console.log('Auth result:', JSON.stringify(data), JSON.stringify(error));
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
   btn.disabled=false;
   document.getElementById('login-btn-text').style.display='inline';
   document.getElementById('login-spin').style.display='none';
+  console.log('Auth result:', data, error);
   if(error){
     document.getElementById('login-error-msg').textContent=error.message;
     err.style.display='flex';
