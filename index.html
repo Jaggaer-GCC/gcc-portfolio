@@ -319,15 +319,22 @@ document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==
 
 async function handleSignOut(){await sb.auth.signOut();}
 
-// On page load, check for existing session first
+// On page load, check for existing session with timeout fallback
 (async () => {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) {
-    currentUser = session.user;
-    await loadProfile();
-    await loadData();
-    try { showApp(); } catch(e) { console.error('showApp error:', e); }
-  } else {
+  try {
+    const sessionPromise = sb.auth.getSession();
+    const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({data:{session:null}}), 3000));
+    const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+    if (session?.user) {
+      currentUser = session.user;
+      await loadProfile();
+      await loadData();
+      try { showApp(); } catch(e) { console.error('showApp error:', e); }
+    } else {
+      document.getElementById('login-screen').style.display='flex';
+    }
+  } catch(e) {
+    console.warn('Session check failed:', e);
     document.getElementById('login-screen').style.display='flex';
   }
 })();
