@@ -337,29 +337,51 @@ sb.auth.onAuthStateChange(async(event, session) => {
   }
 });
 
-async function loadProfile(){
-  const {data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
-  if(data){
-    userProfile=data; canEdit=data.can_edit||data.is_admin;
-  } else {
-    const name=currentUser.email.split('@')[0];
-    const profile={id:currentUser.id,email:currentUser.email,name,role:'GCC Team',initials:name.slice(0,2).toUpperCase(),can_edit:false,is_admin:false};
-    const {error:ie}=await sb.from('profiles').insert(profile);
-    if(ie) console.warn('Profile insert error:',ie.message);
-    userProfile=profile; canEdit=false;
+async function dbFetch(path, options={}) {
+  const session = await sb.auth.getSession();
+  const token = session?.data?.session?.access_token || SUPABASE_ANON_KEY;
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      'Prefer': options.prefer || '',
+      ...(options.headers || {})
+    }
+  });
+  if (!res.ok && res.status !== 204) {
+    const err = await res.text();
+    console.warn('DB error:', err);
+    return null;
   }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function loadProfile(){
+  try {
+    const data = await dbFetch(`profiles?id=eq.${currentUser.id}&limit=1`);
+    if(data && data.length > 0){
+      userProfile=data[0]; canEdit=userProfile.can_edit||userProfile.is_admin;
+    } else {
+      const name=currentUser.email.split('@')[0];
+      const profile={id:currentUser.id,email:currentUser.email,name,role:'GCC Team',initials:name.slice(0,2).toUpperCase(),can_edit:false,is_admin:false};
+      await dbFetch('profiles', {method:'POST', prefer:'return=minimal', body:JSON.stringify(profile)});
+      userProfile=profile; canEdit=false;
+    }
+  } catch(e) { console.warn('loadProfile error:', e); userProfile={name:currentUser.email,role:'GCC',initials:'??',can_edit:false,is_admin:false}; canEdit=false; }
 }
 
 async function loadData(){
   try {
-    const {data:proj,error:pe}=await sb.from('projects').select('*').order('created_at',{ascending:false});
-    if(pe) console.warn('Projects load error:',pe.message);
-    projects=proj||[];
-  } catch(e){ console.warn('Projects exception:',e); projects=[]; }
+    const proj = await dbFetch('projects?order=created_at.desc');
+    projects = proj || [];
+  } catch(e){ console.warn('Projects error:', e); projects=[]; }
   try {
-    const {data:kpi}=await sb.from('kpi_values').select('*').eq('id','main').single();
-    if(kpi) kpiValues={...KPI_DEFAULTS,...kpi};
-  } catch(e){ console.warn('KPI load error:',e); }
+    const kpi = await dbFetch('kpi_values?id=eq.main&limit=1');
+    if(kpi && kpi.length > 0) kpiValues={...KPI_DEFAULTS,...kpi[0]};
+  } catch(e){ console.warn('KPI error:', e); }
 }
 
 function showApp(){
@@ -615,7 +637,7 @@ async function renderBlockers(){
 // ── Team ──────────────────────────────────────────────
 async function renderTeam(){
   if(!userProfile?.is_admin) return`<div class="empty-state"><i class="ti ti-lock"></i><div class="empty-state-title">Admin access required</div></div>`;
-  const {data:users}=await sb.from('profiles').select('*');
+  const users=await dbFetch('profiles?order=email');
   const cols='2fr 1fr 1fr 80px';
   return`
   <div class="section-title" style="margin-bottom:16px">Team Members (${(users||[]).length})</div>
@@ -654,9 +676,10 @@ async function saveNewProject(){
   if(!name){showToast('Project name required.','error');return;}
   const kpis=Array.from(document.getElementById('np-kpis').selectedOptions).map(o=>o.value);
   const data={name,type:document.getElementById('np-type').value,status:'Planning',rag:document.getElementById('np-rag').value,owner:document.getElementById('np-owner').value||'TBD',region:document.getElementById('np-region').value,priority:document.getElementById('np-pri').value,sponsor:document.getElementById('np-sponsor').value||'TBD',start:document.getElementById('np-start').value||new Date().toISOString().split('T')[0],due:document.getElementById('np-due').value||'',progress:0,description:document.getElementById('np-desc').value,kpis,impact:document.getElementById('np-impact').value,milestones:[],tasks:[],blockers:[],acceptance:document.getElementById('np-accept').value,budget:{planned:parseInt(document.getElementById('np-budget').value)||0,actual:0},created_by:userProfile?.name||currentUser?.email};
-  const {data:inserted,error}=await sb.from('projects').insert(data).select().single();
-  if(error){showToast('Failed to save: '+error.message,'error');return;}
-  projects.unshift(inserted); updateBadges(); closeModal(); showToast('Project created.'); renderView('projects');
+  const inserted = await dbFetch('projects', {method:'POST', prefer:'return=representation', headers:{'Prefer':'return=representation'}, body:JSON.stringify(data)});
+  if(!inserted){showToast('Failed to save project.','error');return;}
+  const newProj = Array.isArray(inserted) ? inserted[0] : inserted;
+  projects.unshift(newProj); updateBadges(); closeModal(); showToast('Project created.'); renderView('projects');
 }
 
 function openEditProject(id){
@@ -675,8 +698,8 @@ function openEditProject(id){
 
 async function saveEditProject(id){
   const updates={status:document.getElementById('ep-status').value,rag:document.getElementById('ep-rag').value,progress:parseInt(document.getElementById('ep-progress').value)||0,due:document.getElementById('ep-due').value,owner:document.getElementById('ep-owner').value,description:document.getElementById('ep-desc').value,budget:{...(projects.find(p=>p.id===id)?.budget||{}),actual:parseInt(document.getElementById('ep-actual').value)||0}};
-  const {error}=await sb.from('projects').update(updates).eq('id',id);
-  if(error){showToast('Failed: '+error.message,'error');return;}
+  const result = await dbFetch(`projects?id=eq.${id}`, {method:'PATCH', body:JSON.stringify(updates)});
+  if(result===null && result!==null){showToast('Failed to update.','error');return;}
   const idx=projects.findIndex(p=>p.id===id);
   if(idx>-1) projects[idx]={...projects[idx],...updates};
   updateBadges(); closeModal(); showToast('Project updated.'); renderView(currentView);
@@ -724,8 +747,8 @@ async function saveAddTask(projId){
 async function addTaskToProject(projId,task){
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const tasks=[...(p.tasks||[]),task];
-  const {error}=await sb.from('projects').update({tasks}).eq('id',projId);
-  if(!error){p.tasks=tasks; renderView(currentView);}
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', body:JSON.stringify({tasks})});
+  p.tasks=tasks; renderView(currentView);
 }
 
 async function toggleTask(projId,taskId){
@@ -733,8 +756,8 @@ async function toggleTask(projId,taskId){
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const tasks=(p.tasks||[]).map(t=>t.id===taskId?{...t,done:!t.done}:t);
   const pct=Math.round(tasks.filter(t=>t.done).length/tasks.length*100);
-  const {error}=await sb.from('projects').update({tasks,progress:pct}).eq('id',projId);
-  if(!error){p.tasks=tasks;p.progress=pct; renderView(currentView);}
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', body:JSON.stringify({tasks,progress:pct})});
+  p.tasks=tasks;p.progress=pct; renderView(currentView);
 }
 
 function openAddMilestone(projId){
@@ -754,8 +777,8 @@ async function saveAddMilestone(projId){
   if(!name||!date){showToast('Name and date required.','error');return;}
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const milestones=[...(p.milestones||[]),{id:'m'+Date.now(),name,date,done:false}];
-  const {error}=await sb.from('projects').update({milestones}).eq('id',projId);
-  if(!error){p.milestones=milestones; closeModal(); showToast('Milestone added.'); openProjectDetail(projId);}
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', body:JSON.stringify({milestones})});
+  p.milestones=milestones; closeModal(); showToast('Milestone added.'); openProjectDetail(projId);
 }
 
 function openAddBlocker(projId){
@@ -775,15 +798,15 @@ async function saveAddBlocker(projId){
   if(!title){showToast('Title required.','error');return;}
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const blockers=[...(p.blockers||[]),{id:'b'+Date.now(),title,desc:document.getElementById('ab-desc').value,owner:document.getElementById('ab-owner').value,raised:document.getElementById('ab-date').value}];
-  const {error}=await sb.from('projects').update({blockers}).eq('id',projId);
-  if(!error){p.blockers=blockers; updateBadges(); closeModal(); showToast('Blocker added.'); openProjectDetail(projId);}
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', body:JSON.stringify({blockers})});
+  p.blockers=blockers; updateBadges(); closeModal(); showToast('Blocker added.'); openProjectDetail(projId);
 }
 
 async function resolveBlocker(projId,blockerId){
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const blockers=(p.blockers||[]).filter(b=>b.id!==blockerId);
-  const {error}=await sb.from('projects').update({blockers}).eq('id',projId);
-  if(!error){p.blockers=blockers; updateBadges(); showToast('Blocker resolved.'); renderView(currentView);}
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', body:JSON.stringify({blockers})});
+  p.blockers=blockers; updateBadges(); showToast('Blocker resolved.'); renderView(currentView);
 }
 
 function openEditKPI(kpiId,currentVal){
@@ -798,7 +821,7 @@ async function saveKPI(kpiId){
   const val=parseFloat(document.getElementById('kpi-val').value);
   if(isNaN(val)){showToast('Enter a valid number.','error');return;}
   const updates={id:'main',[kpiId]:val};
-  await sb.from('kpi_values').upsert(updates);
+  await dbFetch('kpi_values', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}, body:JSON.stringify(updates)});
   kpiValues[kpiId]=val; closeModal(); showToast('KPI updated.'); renderView('kpis');
 }
 
@@ -811,7 +834,7 @@ async function openEditUser(uid,canEditCurrent,isAdminCurrent){
 
 async function saveUserAccess(uid){
   const level=document.getElementById('eu-access').value;
-  await sb.from('profiles').update({can_edit:level==='editor'||level==='admin',is_admin:level==='admin'}).eq('id',uid);
+  await dbFetch(`profiles?id=eq.${uid}`, {method:'PATCH', body:JSON.stringify({can_edit:level==='editor'||level==='admin',is_admin:level==='admin'})});
   closeModal(); showToast('Access updated.'); nav('team',null);
 }
 
@@ -837,4 +860,3 @@ document.getElementById('login-btn').addEventListener('click', handleLogin);
 </script>
 </body>
 </html>
-
