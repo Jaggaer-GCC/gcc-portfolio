@@ -834,7 +834,7 @@ async function openEditUser(uid,canEditCurrent,isAdminCurrent){
 
 async function saveUserAccess(uid){
   const level=document.getElementById('eu-access').value;
-  await dbFetch(`profiles?id=eq.${uid}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({can_edit:level==='editor'||level==='admin',is_admin:level==='admin'})};
+  await dbFetch(`profiles?id=eq.${uid}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({can_edit:level==='editor'||level==='admin',is_admin:level==='admin'})});
   closeModal(); showToast('Access updated.'); nav('team',null);
 }
 
