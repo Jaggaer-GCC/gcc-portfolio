@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GCC Portfolio — Operations Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--surface:#171b26;--surface2:#1e2333;--surface3:#252a3d;
+  --border:#2a3050;--border2:#3a4060;
+  --text:#e8eaf0;--text2:#8892b0;--text3:#556080;
+  --blue:#4f8ef7;--blue-bg:#1a2540;--blue-dim:#2a3f6f;
+  --green:#3ecf8e;--green-bg:#0f2920;
+  --amber:#f5a623;--amber-bg:#2a1f0a;
+  --red:#ef5350;--red-bg:#2a1010;
+  --purple:#9b72f7;--purple-bg:#1e1535;
+  --teal:#38bdf8;--teal-bg:#0c1e2e;
+  --radius:8px;--radius-lg:12px;
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:18px 18px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
+.logo-text{font-size:13px;font-weight:600;color:var(--text)}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.sidebar-nav{padding:12px 8px;flex:1}
+.nav-section{margin-bottom:20px}
+.nav-label{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:0 10px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;color:var(--text2);font-size:13px;transition:all .12s;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--blue-bg);color:var(--blue)}
+.nav-item i{font-size:16px;width:18px;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;min-width:16px;text-align:center}
+.sidebar-user{padding:12px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--blue);flex-shrink:0}
+.user-name{font-size:12px;font-weight:500;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:10px;color:var(--text3)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{padding:13px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:600;color:var(--text)}
+.topbar-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.content{flex:1;padding:24px;overflow-y:auto}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .12s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.btn i{font-size:14px}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:#3d7de0}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(239,83,80,.3)}
+.icon-btn{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:all .12s}
+.icon-btn:hover{background:var(--surface3);color:var(--text)}
+.icon-btn i{font-size:15px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px}
+.stat-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-value{font-size:28px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace;line-height:1;margin-bottom:4px}
+.stat-meta{font-size:11px;color:var(--text3)}
+.stat-meta.up{color:var(--green)}
+.stat-meta.down{color:var(--red)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px}
+.panel-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-size:13px;font-weight:600;color:var(--text)}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-purple{background:var(--purple-bg);color:var(--purple)}
+.badge-teal{background:var(--teal-bg);color:var(--teal)}
+.badge-gray{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.rag{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+.rag-g{background:var(--green)}.rag-a{background:var(--amber)}.rag-r{background:var(--red)}
+.progress-bar{background:var(--surface3);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;background:var(--blue);transition:width .3s}
+.progress-fill.green{background:var(--green)}
+.progress-fill.amber{background:var(--amber)}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.filter-btn{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .12s;font-family:'DM Sans',sans-serif}
+.filter-btn:hover,.filter-btn.active{background:var(--blue-bg);border-color:var(--blue-dim);color:var(--blue)}
+.data-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.table-head{display:grid;padding:9px 16px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.th{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.table-row{display:grid;padding:11px 16px;border-bottom:1px solid var(--border);align-items:center;cursor:pointer;transition:background .1s}
+.table-row:hover{background:var(--surface2)}
+.table-row:last-child{border-bottom:none}
+.row-primary{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.row-secondary{font-size:10px;color:var(--text3)}
+.owner-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.owner-av{width:22px;height:22px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:var(--text2);flex-shrink:0}
+.task-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.task-item:last-child{border-bottom:none}
+.task-cb{width:17px;height:17px;border-radius:4px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:transparent;color:transparent;transition:all .12s}
+.task-cb.done{background:var(--green);border-color:var(--green);color:#fff}
+.task-cb i{font-size:11px}
+.task-name{font-size:12px;color:var(--text);flex:1;min-width:0}
+.task-name.done{text-decoration:line-through;color:var(--text3)}
+.task-due{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;flex-shrink:0}
+.ms-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:6px;margin-bottom:6px}
+.ms-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.kpi-item{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.kpi-name{font-size:11px;color:var(--text2);width:150px;flex-shrink:0}
+.kpi-bar-bg{flex:1;background:var(--surface3);border-radius:4px;height:6px;overflow:hidden}
+.kpi-bar{height:100%;border-radius:4px}
+.kpi-val{font-size:11px;font-family:'DM Mono',monospace;color:var(--text);width:44px;text-align:right;flex-shrink:0}
+.kpi-tgt{font-size:10px;color:var(--text3);width:52px;text-align:right;flex-shrink:0}
+.sp-panel{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:12px}
+.sp-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.sp-row:last-child{border-bottom:none}
+.sp-label{font-size:11px;color:var(--text3)}
+.sp-value{font-size:11px;color:var(--text);font-weight:500}
+.alert-banner{background:var(--amber-bg);border:1px solid rgba(245,166,35,.25);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.alert-banner i{color:var(--amber);font-size:16px;flex-shrink:0}
+.alert-text{font-size:12px;color:var(--amber)}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text3)}
+.empty-state i{font-size:36px;margin-bottom:12px;display:block}
+.empty-state-title{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto}
+.modal-wide{max-width:860px}
+.modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-title{font-size:15px;font-weight:600;color:var(--text)}
+.modal-subtitle{font-size:11px;color:var(--text3);margin-top:2px}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:12px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface);z-index:1}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border .12s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--blue)}
+.form-select option{background:var(--surface2)}
+.form-textarea{resize:vertical;min-height:72px;line-height:1.5}
+.form-hint{font-size:10px;color:var(--text3);margin-top:4px}
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
+.login-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:36px;width:360px}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.login-logo-icon{width:40px;height:40px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700}
+.login-logo-text{font-size:17px;font-weight:600;color:var(--text)}
+.login-form-group{margin-bottom:14px}
+.login-label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block}
+.login-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border .12s}
+.login-input:focus{border-color:var(--blue)}
+.login-btn{width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:6px;transition:background .12s;display:flex;align-items:center;justify-content:center;gap:8px}
+.login-btn:hover{background:#3d7de0}
+.login-btn:disabled{opacity:.6;cursor:not-allowed}
+.login-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:16px}
+.error-banner{background:var(--red-bg);border:1px solid rgba(239,83,80,.3);border-radius:6px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:var(--red)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--text);z-index:2000;display:flex;align-items:center;gap:8px}
+.detail-header{padding:18px 22px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.detail-title{font-size:17px;font-weight:600;color:var(--text);margin-bottom:8px}
+.detail-badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.detail-body{padding:18px 22px;display:grid;grid-template-columns:1fr 280px;gap:20px}
+.meta-row{display:flex;gap:14px;margin-bottom:14px}
+.meta-block{flex:1;min-width:0}
+.meta-label{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.meta-value{font-size:12px;color:var(--text)}
+.tab-bar{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 14px;font-size:12px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;transition:color .12s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.spin{animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">G</div>
+      <div>
+        <div class="login-logo-text">GCC Portfolio</div>
+        <div style="font-size:11px;color:var(--text3)">Operations Hub</div>
+      </div>
+    </div>
+    <div id="login-error" class="error-banner" style="display:none">
+      <i class="ti ti-alert-circle"></i><span id="login-error-msg">Invalid credentials</span>
+    </div>
+    <div class="login-form-group">
+      <label class="login-label">Email</label>
+      <input class="login-input" id="login-email" type="email" placeholder="you@company.com"/>
+    </div>
+    <div class="login-form-group">
+      <label class="login-label">Password</label>
+      <input class="login-input" id="login-pass" type="password" placeholder="Password"/>
+    </div>
+    <button class="login-btn" id="login-btn" onclick="handleLogin()">
+      <span id="login-btn-text">Sign In</span>
+      <i class="ti ti-loader-2 spin" id="login-spin" style="display:none"></i>
+    </button>
+    <div class="login-hint">Contact your GCC admin to request access</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="app" style="display:none">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">G</div>
+      <div><div class="logo-text">GCC Portfolio</div><div class="logo-sub">Operations Hub</div></div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Overview</div>
+        <button class="nav-item active" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
+        <button class="nav-item" onclick="nav('projects',this)"><i class="ti ti-folders"></i>Projects<span class="nav-badge" id="badge-active" style="display:none">0</span></button>
+        <button class="nav-item" onclick="nav('tasks',this)"><i class="ti ti-checklist"></i>All Tasks</button>
+        <button class="nav-item" onclick="nav('milestones',this)"><i class="ti ti-flag"></i>Milestones</button>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Intelligence</div>
+        <button class="nav-item" onclick="nav('kpis',this)"><i class="ti ti-chart-line"></i>KPI Tracker</button>
+        <button class="nav-item" onclick="nav('blockers',this)"><i class="ti ti-alert-triangle"></i>Blockers<span class="nav-badge" id="badge-blockers" style="display:none">0</span></button>
+      </div>
+      <div class="nav-section" id="admin-nav" style="display:none">
+        <div class="nav-label">Admin</div>
+        <button class="nav-item" onclick="nav('team',this)"><i class="ti ti-users"></i>Team</button>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="user-av">??</div>
+      <div style="flex:1;min-width:0">
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-role" id="user-role">GCC</div>
+      </div>
+      <button class="icon-btn" onclick="handleSignOut()" title="Sign out"><i class="ti ti-logout" style="font-size:15px"></i></button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div style="font-size:11px;color:var(--text3)" id="page-sub">Portfolio overview</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" id="btn-np" onclick="openNewProject()" style="display:none"><i class="ti ti-plus"></i> New Project</button>
+        <button class="btn btn-primary" id="btn-nt" onclick="openNewTask()" style="display:none"><i class="ti ti-plus"></i> New Task</button>
+      </div>
+    </div>
+    <div class="content" id="content">
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3)">
+        <i class="ti ti-loader-2 spin" style="font-size:24px"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal-inner"></div>
+</div>
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIGURATION — REPLACE THESE TWO VALUES
+// ═══════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://tuubqxnphoifqjbumgxa.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dWJxeG5waG9pZnFqYnVtZ3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDQ2MjAsImV4cCI6MjA5NDEyMDYyMH0.U0Tdp6GUBZMF16z00WvxmMTRKtWaJQEX954oy_w70Q0';
+// ═══════════════════════════════════════════════════════
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const KPI_DEFS = [
+  {id:'sla',  name:'SLA Adherence',          target:95,  unit:'%',   higher:true},
+  {id:'fcr',  name:'First Contact Resolution',target:70,  unit:'%',   higher:true},
+  {id:'csat', name:'CSAT Score',              target:4.2, unit:'/5',  higher:true},
+  {id:'deflect',name:'Case Deflection Rate',  target:30,  unit:'%',   higher:true},
+  {id:'ttr',  name:'Avg Time to Resolve',     target:48,  unit:' hrs',higher:false},
+  {id:'esc',  name:'Escalation Rate',         target:5,   unit:'%',   higher:false},
+];
+const KPI_DEFAULTS = {sla:88,fcr:64,csat:3.9,deflect:18,ttr:61,esc:8};
+
+let currentUser=null, userProfile=null, canEdit=false;
+let projects=[], kpiValues={...KPI_DEFAULTS};
+let currentView='dashboard', filterProjects='All', filterTasks='open';
+let toastTimer=null;
+
+// ── Auth ──────────────────────────────────────────────
+async function handleLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-error');
+  const btn=document.getElementById('login-btn');
+  err.style.display='none'; btn.disabled=true;
+  document.getElementById('login-btn-text').style.display='none';
+  document.getElementById('login-spin').style.display='inline';
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  btn.disabled=false;
+  document.getElementById('login-btn-text').style.display='inline';
+  document.getElementById('login-spin').style.display='none';
+  if(error){
+    document.getElementById('login-error-msg').textContent=error.message;
+    err.style.display='flex';
+  }
+}
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin();});
+document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
+
+async function handleSignOut(){await sb.auth.signOut();}
+
+sb.auth.onAuthStateChange(async(event,session)=>{
+  if(session?.user){
+    currentUser=session.user;
+    await loadProfile();
+    await loadData();
+    showApp();
+  } else {
+    currentUser=null; userProfile=null; canEdit=false; projects=[];
+    document.getElementById('app').style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+  }
+});
+
+async function loadProfile(){
+  const {data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
+  if(data){
+    userProfile=data; canEdit=data.can_edit||data.is_admin;
+  } else {
+    const name=currentUser.email.split('@')[0];
+    const profile={id:currentUser.id,email:currentUser.email,name,role:'GCC Team',initials:name.slice(0,2).toUpperCase(),can_edit:false,is_admin:false};
+    await sb.from('profiles').insert(profile);
+    userProfile=profile; canEdit=false;
+  }
+}
+
+async function loadData(){
+  const {data:proj}=await sb.from('projects').select('*').order('created_at',{ascending:false});
+  projects=proj||[];
+  const {data:kpi}=await sb.from('kpi_values').select('*').eq('id','main').single();
+  if(kpi) kpiValues={...KPI_DEFAULTS,...kpi};
+}
+
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('user-av').textContent=userProfile?.initials||'??';
+  document.getElementById('user-name').textContent=userProfile?.name||currentUser.email;
+  document.getElementById('user-role').textContent=userProfile?.role||'GCC';
+  if(userProfile?.is_admin) document.getElementById('admin-nav').style.display='block';
+  if(canEdit){
+    document.getElementById('btn-np').style.display='inline-flex';
+    document.getElementById('btn-nt').style.display='inline-flex';
+  }
+  updateBadges(); renderView('dashboard');
+}
+
+// ── Nav ───────────────────────────────────────────────
+function nav(view,el){
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderView(view);
+}
+function renderView(view){
+  currentView=view;
+  const titles={dashboard:['Dashboard','Portfolio overview — Global Customer Care'],projects:['Projects','All projects in the GCC portfolio'],tasks:['All Tasks','Tasks across all active projects'],milestones:['Milestones','Upcoming and completed milestones'],kpis:['KPI Tracker','Current performance vs targets'],blockers:['Active Blockers','Issues blocking project progress'],team:['Team & Access','User management and permissions']};
+  const [t,s]=titles[view]||[view,''];
+  document.getElementById('page-title').textContent=t;
+  document.getElementById('page-sub').textContent=s;
+  const views={dashboard:renderDashboard,projects:renderProjects,tasks:renderAllTasks,milestones:renderMilestones,kpis:renderKPIs,blockers:renderBlockers,team:renderTeam};
+  document.getElementById('content').innerHTML=(views[view]||(() =>''))();
+}
+
+function updateBadges(){
+  const active=projects.filter(p=>p.status==='In Progress').length;
+  const ab=document.getElementById('badge-active');
+  ab.textContent=active; ab.style.display=active>0?'inline':'none';
+  const blocks=projects.reduce((a,p)=>a+(p.blockers?.length||0),0);
+  const bb=document.getElementById('badge-blockers');
+  bb.textContent=blocks; bb.style.display=blocks>0?'inline':'none';
+}
+
+// ── Helpers ───────────────────────────────────────────
+const ragCls=r=>r==='G'?'badge-green':r==='A'?'badge-amber':'badge-red';
+const ragDot=r=>`<span class="rag ${r==='G'?'rag-g':r==='A'?'rag-a':'rag-r'}"></span>`;
+const statusLabel=p=>p.status==='Completed'?'Completed':p.status==='Planning'?'Planning':p.rag==='G'?'On Track':p.rag==='A'?'At Risk':'Off Track';
+const statusBadge=p=>`<span class="badge ${p.status==='Completed'?'badge-green':p.status==='Planning'?'badge-purple':ragCls(p.rag)}">${statusLabel(p)}</span>`;
+const typeColors={Strategic:'badge-blue',Operational:'badge-teal',Process:'badge-gray',Transformation:'badge-red',Workforce:'badge-purple',Quality:'badge-green'};
+const typeBadge=t=>`<span class="badge ${typeColors[t]||'badge-gray'}">${t}</span>`;
+const priBadge=p=>p==='P1'?`<span class="badge badge-red">${p}</span>`:`<span class="badge badge-gray">${p}</span>`;
+const isOverdue=d=>d&&new Date(d)<new Date();
+const daysUntil=d=>Math.ceil((new Date(d)-new Date())/86400000);
+const onTrack=(k,v)=>k.higher?v>=k.target*0.95:v<=k.target*1.1;
+const pctBar=(k,v)=>Math.max(3,Math.min(100,k.higher?v/k.target*100:(2-v/k.target)*100));
+
+// ── Dashboard ─────────────────────────────────────────
+function renderDashboard(){
+  const total=projects.length,active=projects.filter(p=>p.status==='In Progress').length;
+  const completed=projects.filter(p=>p.status==='Completed').length;
+  const atRisk=projects.filter(p=>p.rag==='R'||p.rag==='A').length;
+  const allBlocks=projects.reduce((a,p)=>a+(p.blockers?.length||0),0);
+  const overdueMs=projects.flatMap(p=>(p.milestones||[]).filter(m=>!m.done&&isOverdue(m.date))).length;
+  const upMs=projects.flatMap(p=>(p.milestones||[]).filter(m=>!m.done).map(m=>({...m,pn:p.name}))).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,6);
+  return`
+  ${overdueMs>0?`<div class="alert-banner"><i class="ti ti-alert-triangle"></i><span class="alert-text">${overdueMs} milestone${overdueMs>1?'s':''} overdue across the portfolio.</span></div>`:''}
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Total Projects</div><div class="stat-value">${total}</div><div class="stat-meta">${active} active</div></div>
+    <div class="stat-card"><div class="stat-label">Active Blockers</div><div class="stat-value" style="color:var(--red)">${allBlocks}</div><div class="stat-meta ${allBlocks>0?'down':''}">${allBlocks>0?'Action required':'All clear'}</div></div>
+    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" style="color:var(--green)">${completed}</div><div class="stat-meta up">This cycle</div></div>
+    <div class="stat-card"><div class="stat-label">At Risk / Off Track</div><div class="stat-value" style="color:var(--amber)">${atRisk}</div><div class="stat-meta">of ${total} total</div></div>
+  </div>
+  <div class="section-header"><div class="section-title">Active Projects</div><button class="btn btn-ghost" onclick="nav('projects',null)" style="font-size:11px">View all</button></div>
+  ${renderProjectTable(projects.filter(p=>p.status!=='Completed').slice(0,5))}
+  <div class="two-col" style="margin-top:20px">
+    <div class="panel">
+      <div class="panel-title">KPI Performance <span style="font-size:10px;color:var(--text3);font-weight:400">vs target</span></div>
+      ${KPI_DEFS.map(k=>{const v=kpiValues[k.id]??KPI_DEFAULTS[k.id];const ot=onTrack(k,v);const color=ot?'var(--green)':'var(--amber)';return`<div class="kpi-item"><div class="kpi-name">${k.name}</div><div class="kpi-bar-bg"><div class="kpi-bar" style="width:${pctBar(k,v)}%;background:${color}"></div></div><div class="kpi-val">${v}${k.unit}</div><div class="kpi-tgt">tgt ${k.target}${k.unit}</div></div>`;}).join('')}
+    </div>
+    <div class="panel">
+      <div class="panel-title">Upcoming Milestones</div>
+      ${upMs.length===0?'<div style="font-size:12px;color:var(--text3)">No upcoming milestones.</div>':upMs.map(m=>`<div class="ms-item"><div class="ms-dot" style="background:${isOverdue(m.date)?'var(--red)':'var(--green)'}"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text)">${m.name}</div><div style="font-size:10px;color:var(--text3)">${m.pn}</div></div><div style="font-size:10px;color:${isOverdue(m.date)?'var(--red)':'var(--text3)'};font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ── Projects ──────────────────────────────────────────
+function renderProjects(){
+  const types=['All','Strategic','Operational','Process','Transformation','Workforce','Quality'];
+  const filtered=filterProjects==='All'?projects:projects.filter(p=>p.type===filterProjects);
+  return`
+  <div class="filters">${types.map(t=>`<button class="filter-btn ${filterProjects===t?'active':''}" onclick="filterProjects='${t}';renderView('projects')">${t}</button>`).join('')}</div>
+  <div class="section-header"><div class="section-title">${filtered.length} Project${filtered.length!==1?'s':''}</div>${canEdit?`<button class="btn btn-primary" onclick="openNewProject()"><i class="ti ti-plus"></i> New Project</button>`:''}</div>
+  ${renderProjectTable(filtered)}`;
+}
+
+function renderProjectTable(list){
+  if(list.length===0) return`<div class="empty-state"><i class="ti ti-folders"></i><div class="empty-state-title">No projects found</div></div>`;
+  const cols='2fr 1fr 1fr 1fr 1fr 1fr 70px';
+  return`<div class="data-table">
+    <div class="table-head" style="grid-template-columns:${cols}"><div class="th">Project</div><div class="th">Type</div><div class="th">Status</div><div class="th">Owner</div><div class="th">Due</div><div class="th">Progress</div><div class="th"></div></div>
+    ${list.map(p=>{
+      const done=(p.milestones||[]).filter(m=>m.done).length,tot=(p.milestones||[]).length;
+      const days=daysUntil(p.due);
+      return`<div class="table-row" style="grid-template-columns:${cols}" onclick="openProjectDetail('${p.id}')">
+        <div><div class="row-primary">${p.name}</div><div class="row-secondary">${p.region||''} &bull; ${p.impact||''} impact &bull; ${done}/${tot} milestones</div></div>
+        <div>${typeBadge(p.type)}</div>
+        <div style="display:flex;align-items:center;gap:6px">${ragDot(p.rag)}${statusBadge(p)}</div>
+        <div><div class="owner-chip"><div class="owner-av">${p.owner||'?'}</div>${p.owner||'—'}</div></div>
+        <div style="font-size:11px;font-family:'DM Mono',monospace;color:${days<14&&p.status!=='Completed'?'var(--amber)':'var(--text2)'}">${p.due||'—'}</div>
+        <div><div style="display:flex;align-items:center;gap:6px"><div class="progress-bar" style="width:80px;height:5px"><div class="progress-fill ${p.progress>=100?'green':(p.rag==='A'||p.rag==='R')?'amber':''}" style="width:${p.progress||0}%"></div></div><span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${p.progress||0}%</span></div></div>
+        <div style="display:flex;gap:4px" onclick="event.stopPropagation()">
+          <button class="icon-btn" onclick="openProjectDetail('${p.id}')"><i class="ti ti-eye"></i></button>
+          ${canEdit?`<button class="icon-btn" onclick="openEditProject('${p.id}')"><i class="ti ti-edit"></i></button>`:''}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// ── Project Detail ────────────────────────────────────
+function openProjectDetail(id){
+  const p=projects.find(x=>x.id===id); if(!p) return;
+  const doneTasks=(p.tasks||[]).filter(t=>t.done).length;
+  const days=daysUntil(p.due);
+  const bp=p.budget?.planned>0?Math.round(p.budget.actual/p.budget.planned*100):null;
+  openModal(`
+  <div class="detail-header">
+    <div class="detail-title">${p.name}</div>
+    <div class="detail-badges">${statusBadge(p)} ${typeBadge(p.type)} ${priBadge(p.priority)} <span class="badge badge-gray">${p.region||''}</span></div>
+  </div>
+  <div class="detail-body">
+    <div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">${p.description||'No description.'}</div>
+      <div class="meta-row">
+        <div class="meta-block"><div class="meta-label">Owner</div><div class="meta-value">${p.owner||'—'}</div></div>
+        <div class="meta-block"><div class="meta-label">Sponsor</div><div class="meta-value">${p.sponsor||'—'}</div></div>
+        <div class="meta-block"><div class="meta-label">Due</div><div class="meta-value" style="font-family:'DM Mono',monospace">${p.due||'—'}</div></div>
+        <div class="meta-block"><div class="meta-label">Impact</div><div class="meta-value">${p.impact||'—'}</div></div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div class="meta-label" style="margin-bottom:6px">Progress</div>
+        <div style="display:flex;align-items:center;gap:10px"><div class="progress-bar" style="flex:1;height:8px"><div class="progress-fill ${p.progress>=100?'green':(p.rag==='R'||p.rag==='A')?'amber':''}" style="width:${p.progress||0}%"></div></div><span style="font-size:13px;font-weight:600;font-family:'DM Mono',monospace">${p.progress||0}%</span></div>
+      </div>
+      ${(p.kpis||[]).length>0?`<div style="margin-bottom:16px"><div class="meta-label" style="margin-bottom:6px">Linked KPIs</div><div style="display:flex;gap:6px;flex-wrap:wrap">${(p.kpis||[]).map(k=>{const def=KPI_DEFS.find(x=>x.id===k);return`<span class="badge badge-blue">${def?def.name:k}</span>`;}).join('')}</div></div>`:''}
+      ${p.acceptance?`<div style="margin-bottom:16px"><div class="meta-label" style="margin-bottom:4px">Acceptance Criteria</div><div style="font-size:12px;color:var(--text2);line-height:1.6;padding:8px 10px;background:var(--surface2);border-radius:6px">${p.acceptance}</div></div>`:''}
+      <div>
+        <div class="meta-label" style="margin-bottom:8px">Tasks (${doneTasks}/${(p.tasks||[]).length} complete)</div>
+        ${(p.tasks||[]).length===0?'<div style="font-size:12px;color:var(--text3)">No tasks yet.</div>':(p.tasks||[]).map(t=>`<div class="task-item"><div class="task-cb ${t.done?'done':''}" onclick="${canEdit?`toggleTask('${id}','${t.id}')`:''}" style="cursor:${canEdit?'pointer':'default'}"><i class="ti ti-check"></i></div><div style="flex:1"><div class="task-name ${t.done?'done':''}">${t.name}</div><div style="font-size:10px;color:var(--text3)">${t.owner||''}</div></div>${priBadge(t.priority)}<div class="task-due" style="color:${isOverdue(t.due)&&!t.done?'var(--red)':'var(--text3)'}">${t.due||''}</div></div>`).join('')}
+        ${canEdit?`<button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="openAddTask('${id}')"><i class="ti ti-plus"></i> Add task</button>`:''}
+      </div>
+    </div>
+    <div>
+      <div class="sp-panel">
+        <div class="meta-label" style="margin-bottom:8px">Project Info</div>
+        <div class="sp-row"><div class="sp-label">Start</div><div class="sp-value" style="font-family:'DM Mono',monospace">${p.start||'—'}</div></div>
+        <div class="sp-row"><div class="sp-label">Due</div><div class="sp-value" style="font-family:'DM Mono',monospace">${p.due||'—'}</div></div>
+        <div class="sp-row"><div class="sp-label">Days remaining</div><div class="sp-value" style="color:${days<30&&p.status!=='Completed'?'var(--amber)':'var(--text)'}">${p.status==='Completed'?'Done':days>0?days:'Overdue'}</div></div>
+        ${bp!==null?`<div class="sp-row"><div class="sp-label">Budget used</div><div class="sp-value">${bp}%</div></div><div class="sp-row"><div class="sp-label">Spend</div><div class="sp-value">$${((p.budget.actual||0)/1000).toFixed(0)}k / $${((p.budget.planned||0)/1000).toFixed(0)}k</div></div>`:''}
+      </div>
+      <div class="sp-panel">
+        <div class="meta-label" style="margin-bottom:8px">Milestones</div>
+        ${(p.milestones||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No milestones.</div>':(p.milestones||[]).map(m=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)"><div class="ms-dot" style="background:${m.done?'var(--green)':isOverdue(m.date)?'var(--red)':'var(--text3)'}"></div><div style="flex:1;font-size:11px;color:${m.done?'var(--text3)':'var(--text)'};${m.done?'text-decoration:line-through':''};">${m.name}</div><div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}
+        ${canEdit?`<button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="openAddMilestone('${id}')"><i class="ti ti-plus"></i> Add milestone</button>`:''}
+      </div>
+      <div class="sp-panel">
+        <div class="meta-label" style="margin-bottom:8px;color:${(p.blockers||[]).length>0?'var(--red)':'var(--text3)'}">Blockers (${(p.blockers||[]).length})</div>
+        ${(p.blockers||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No active blockers.</div>':(p.blockers||[]).map(b=>`<div style="background:var(--red-bg);border:1px solid rgba(239,83,80,.2);border-radius:6px;padding:8px 10px;margin-bottom:6px"><div style="font-size:12px;color:var(--red);font-weight:600">${b.title}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${b.desc}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Owner: ${b.owner} &bull; Raised: ${b.raised}</div>${canEdit?`<button class="btn btn-ghost" style="margin-top:6px;font-size:10px" onclick="resolveBlocker('${id}','${b.id}')"><i class="ti ti-check"></i> Resolve</button>`:''}</div>`).join('')}
+        ${canEdit?`<button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="openAddBlocker('${id}')"><i class="ti ti-plus"></i> Add blocker</button>`:''}
+      </div>
+    </div>
+  </div>`,'modal-wide');
+}
+
+// ── All Tasks ─────────────────────────────────────────
+function renderAllTasks(){
+  const all=projects.flatMap(p=>(p.tasks||[]).map(t=>({...t,pn:p.name,pid:p.id})));
+  const open=all.filter(t=>!t.done),done=all.filter(t=>t.done);
+  const shown=filterTasks==='open'?open:done;
+  return`
+  <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${all.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Open</div><div class="stat-value" style="color:var(--amber)">${open.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" style="color:var(--green)">${done.length}</div></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab ${filterTasks==='open'?'active':''}" onclick="filterTasks='open';renderView('tasks')">Open (${open.length})</button>
+    <button class="tab ${filterTasks==='done'?'active':''}" onclick="filterTasks='done';renderView('tasks')">Completed (${done.length})</button>
+  </div>
+  <div class="panel">
+    ${shown.length===0?`<div class="empty-state"><i class="ti ti-checklist"></i><div class="empty-state-title">No tasks here</div></div>`:
+    shown.sort((a,b)=>(a.priority||'').localeCompare(b.priority||'')).map(t=>`
+    <div class="task-item">
+      <div class="task-cb ${t.done?'done':''}" onclick="${canEdit?`toggleTask('${t.pid}','${t.id}')`:''}" style="cursor:${canEdit?'pointer':'default'}"><i class="ti ti-check"></i></div>
+      <div style="flex:1;min-width:0"><div class="task-name ${t.done?'done':''}">${t.name}</div><div style="font-size:10px;color:var(--text3);margin-top:1px">${t.pn} &bull; ${t.owner||''}</div></div>
+      ${priBadge(t.priority)}
+      <div class="task-due" style="color:${isOverdue(t.due)&&!t.done?'var(--red)':'var(--text3)'}">${t.due||''}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── Milestones ────────────────────────────────────────
+function renderMilestones(){
+  const all=projects.flatMap(p=>(p.milestones||[]).map(m=>({...m,pn:p.name})));
+  const up=all.filter(m=>!m.done).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const done=all.filter(m=>m.done);
+  return`
+  <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${all.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Upcoming</div><div class="stat-value" style="color:var(--blue)">${up.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" style="color:var(--green)">${done.length}</div></div>
+  </div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-title">Upcoming (${up.length})</div>${up.length===0?'<div style="font-size:12px;color:var(--text3)">None.</div>':up.map(m=>`<div class="ms-item"><div class="ms-dot" style="background:${isOverdue(m.date)?'var(--red)':'var(--green)'}"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text)">${m.name}</div><div style="font-size:10px;color:var(--text3)">${m.pn}</div></div><div style="font-size:10px;color:${isOverdue(m.date)?'var(--red)':'var(--text3)'};font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}</div>
+    <div class="panel"><div class="panel-title">Completed (${done.length})</div>${done.length===0?'<div style="font-size:12px;color:var(--text3)">None yet.</div>':done.map(m=>`<div class="ms-item"><div class="ms-dot" style="background:var(--green)"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text3);text-decoration:line-through">${m.name}</div><div style="font-size:10px;color:var(--text3)">${m.pn}</div></div><div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}</div>
+  </div>`;
+}
+
+// ── KPIs ──────────────────────────────────────────────
+function renderKPIs(){
+  return`
+  <div style="margin-bottom:20px"><div class="section-title" style="margin-bottom:4px">GCC KPI Tracker</div><div style="font-size:12px;color:var(--text3)">Current performance vs targets.</div></div>
+  ${KPI_DEFS.map(k=>{
+    const v=kpiValues[k.id]??KPI_DEFAULTS[k.id];
+    const ot=onTrack(k,v);const color=ot?'var(--green)':'var(--amber)';
+    const linked=projects.filter(p=>(p.kpis||[]).includes(k.id));
+    return`<div class="panel" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div><div style="font-size:14px;font-weight:600;color:var(--text)">${k.name}</div><div style="font-size:11px;color:var(--text3)">Target: ${k.target}${k.unit} &bull; ${k.higher?'Higher is better':'Lower is better'}</div></div>
+        <div style="text-align:right"><div style="font-size:26px;font-weight:600;color:${color};font-family:'DM Mono',monospace">${v}${k.unit}</div><div style="font-size:10px;color:${color};font-weight:600">${ot?'ON TRACK':'NEEDS ATTENTION'}</div></div>
+      </div>
+      <div class="progress-bar" style="height:8px;margin-bottom:12px"><div class="progress-fill" style="width:${pctBar(k,v)}%;background:${color}"></div></div>
+      ${linked.length>0?`<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Linked projects</div><div style="display:flex;gap:6px;flex-wrap:wrap">${linked.map(p=>`<span class="badge ${ragCls(p.rag)}" onclick="openProjectDetail('${p.id}')" style="cursor:pointer">${p.name}</span>`).join('')}</div>`:`<div style="font-size:11px;color:var(--text3)">No projects linked to this KPI.</div>`}
+      ${canEdit?`<button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="openEditKPI('${k.id}','${v}')"><i class="ti ti-edit"></i> Update value</button>`:''}
+    </div>`;
+  }).join('')}`;
+}
+
+// ── Blockers ──────────────────────────────────────────
+function renderBlockers(){
+  const all=projects.flatMap(p=>(p.blockers||[]).map(b=>({...b,pn:p.name,pid:p.id})));
+  if(all.length===0) return`<div class="empty-state"><i class="ti ti-circle-check" style="color:var(--green)"></i><div class="empty-state-title" style="color:var(--text)">No active blockers</div><div>All projects are unblocked.</div></div>`;
+  return`<div class="section-title" style="margin-bottom:16px">${all.length} Active Blocker${all.length!==1?'s':''}</div>
+  ${all.map(b=>`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--red);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:12px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between"><div><div style="font-size:13px;font-weight:600;color:var(--red)">${b.title}</div><div style="font-size:11px;color:var(--text3);margin:3px 0">Project: ${b.pn} &bull; Owner: ${b.owner} &bull; Raised: ${b.raised}</div></div><span class="badge badge-red">Blocking</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-top:6px">${b.desc}</div>
+    ${canEdit?`<button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="resolveBlocker('${b.pid}','${b.id}')"><i class="ti ti-check"></i> Mark resolved</button>`:''}
+  </div>`).join('')}`;
+}
+
+// ── Team ──────────────────────────────────────────────
+async function renderTeam(){
+  if(!userProfile?.is_admin) return`<div class="empty-state"><i class="ti ti-lock"></i><div class="empty-state-title">Admin access required</div></div>`;
+  const {data:users}=await sb.from('profiles').select('*');
+  const cols='2fr 1fr 1fr 80px';
+  return`
+  <div class="section-title" style="margin-bottom:16px">Team Members (${(users||[]).length})</div>
+  <div class="data-table">
+    <div class="table-head" style="grid-template-columns:${cols}"><div class="th">User</div><div class="th">Role</div><div class="th">Access</div><div class="th"></div></div>
+    ${(users||[]).map(u=>`<div class="table-row" style="grid-template-columns:${cols};cursor:default">
+      <div style="display:flex;align-items:center;gap:10px"><div class="owner-av" style="width:30px;height:30px;font-size:10px">${u.initials||'??'}</div><div><div class="row-primary">${u.name||u.email}</div><div class="row-secondary">${u.email}</div></div></div>
+      <div style="font-size:12px;color:var(--text2)">${u.role||'GCC'}</div>
+      <div><span class="badge ${u.is_admin?'badge-red':u.can_edit?'badge-blue':'badge-gray'}">${u.is_admin?'Admin':u.can_edit?'Editor':'Viewer'}</span></div>
+      <div>${canEdit?`<button class="icon-btn" onclick="openEditUser('${u.id}',${u.can_edit},${u.is_admin})"><i class="ti ti-edit"></i></button>`:''}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── CRUD ──────────────────────────────────────────────
+function openNewProject(){
+  if(!canEdit) return;
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">New Project</div><div class="modal-subtitle">Add to the GCC portfolio</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="np-name" placeholder="e.g. APAC Escalation Reduction"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="np-type"><option>Strategic</option><option>Operational</option><option>Process</option><option>Transformation</option><option>Workforce</option><option>Quality</option></select></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="np-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="np-owner" placeholder="Initials e.g. JM"/></div><div class="form-group"><label class="form-label">Sponsor</label><input class="form-input" id="np-sponsor" placeholder="Executive sponsor"/></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Region</label><select class="form-select" id="np-region"><option>Global</option><option>EMEA</option><option>APAC</option><option>US</option><option>LATAM</option></select></div><div class="form-group"><label class="form-label">Business Impact</label><select class="form-select" id="np-impact"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Start Date</label><input class="form-input" id="np-start" type="date"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="np-due" type="date"/></div></div>
+    <div class="form-group"><label class="form-label">KPIs Impacted</label><select class="form-select" id="np-kpis" multiple style="height:88px">${KPI_DEFS.map(k=>`<option value="${k.id}">${k.name}</option>`).join('')}</select><div class="form-hint">Hold Ctrl to select multiple</div></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="np-desc"></textarea></div>
+    <div class="form-group"><label class="form-label">Acceptance Criteria</label><textarea class="form-textarea" id="np-accept" placeholder="How will success be measured?"></textarea></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">RAG Status</label><select class="form-select" id="np-rag"><option value="G">Green — On Track</option><option value="A">Amber — At Risk</option><option value="R">Red — Off Track</option></select></div><div class="form-group"><label class="form-label">Planned Budget ($)</label><input class="form-input" id="np-budget" type="number" placeholder="0"/></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveNewProject()"><i class="ti ti-check"></i> Create Project</button></div>`);
+}
+
+async function saveNewProject(){
+  const name=document.getElementById('np-name').value.trim();
+  if(!name){showToast('Project name required.','error');return;}
+  const kpis=Array.from(document.getElementById('np-kpis').selectedOptions).map(o=>o.value);
+  const data={name,type:document.getElementById('np-type').value,status:'Planning',rag:document.getElementById('np-rag').value,owner:document.getElementById('np-owner').value||'TBD',region:document.getElementById('np-region').value,priority:document.getElementById('np-pri').value,sponsor:document.getElementById('np-sponsor').value||'TBD',start:document.getElementById('np-start').value||new Date().toISOString().split('T')[0],due:document.getElementById('np-due').value||'',progress:0,description:document.getElementById('np-desc').value,kpis,impact:document.getElementById('np-impact').value,milestones:[],tasks:[],blockers:[],acceptance:document.getElementById('np-accept').value,budget:{planned:parseInt(document.getElementById('np-budget').value)||0,actual:0},created_by:userProfile?.name||currentUser?.email};
+  const {data:inserted,error}=await sb.from('projects').insert(data).select().single();
+  if(error){showToast('Failed to save: '+error.message,'error');return;}
+  projects.unshift(inserted); updateBadges(); closeModal(); showToast('Project created.'); renderView('projects');
+}
+
+function openEditProject(id){
+  if(!canEdit) return;
+  const p=projects.find(x=>x.id===id); if(!p) return;
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Edit Project</div><div class="modal-subtitle">${p.name}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-row"><div class="form-group"><label class="form-label">Status</label><select class="form-select" id="ep-status"><option ${p.status==='Planning'?'selected':''}>Planning</option><option ${p.status==='In Progress'?'selected':''}>In Progress</option><option ${p.status==='Completed'?'selected':''}>Completed</option><option ${p.status==='On Hold'?'selected':''}>On Hold</option></select></div><div class="form-group"><label class="form-label">RAG</label><select class="form-select" id="ep-rag"><option value="G" ${p.rag==='G'?'selected':''}>Green</option><option value="A" ${p.rag==='A'?'selected':''}>Amber</option><option value="R" ${p.rag==='R'?'selected':''}>Red</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Progress (%)</label><input class="form-input" id="ep-progress" type="number" min="0" max="100" value="${p.progress||0}"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="ep-due" type="date" value="${p.due||''}"/></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="ep-owner" value="${p.owner||''}"/></div><div class="form-group"><label class="form-label">Actual Spend ($)</label><input class="form-input" id="ep-actual" type="number" value="${p.budget?.actual||0}"/></div></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="ep-desc">${p.description||''}</textarea></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEditProject('${id}')"><i class="ti ti-check"></i> Save</button></div>`);
+}
+
+async function saveEditProject(id){
+  const updates={status:document.getElementById('ep-status').value,rag:document.getElementById('ep-rag').value,progress:parseInt(document.getElementById('ep-progress').value)||0,due:document.getElementById('ep-due').value,owner:document.getElementById('ep-owner').value,description:document.getElementById('ep-desc').value,budget:{...(projects.find(p=>p.id===id)?.budget||{}),actual:parseInt(document.getElementById('ep-actual').value)||0}};
+  const {error}=await sb.from('projects').update(updates).eq('id',id);
+  if(error){showToast('Failed: '+error.message,'error');return;}
+  const idx=projects.findIndex(p=>p.id===id);
+  if(idx>-1) projects[idx]={...projects[idx],...updates};
+  updateBadges(); closeModal(); showToast('Project updated.'); renderView(currentView);
+}
+
+function openNewTask(){
+  if(!canEdit) return;
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">New Task</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Task Name *</label><input class="form-input" id="nt-name" placeholder="What needs to be done?"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Project</label><select class="form-select" id="nt-proj">${projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="nt-owner" placeholder="Name or initials"/></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="nt-due" type="date"/></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="nt-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveNewTask()"><i class="ti ti-check"></i> Add Task</button></div>`);
+}
+
+async function saveNewTask(){
+  const name=document.getElementById('nt-name').value.trim();
+  const projId=document.getElementById('nt-proj').value;
+  if(!name||!projId){showToast('Name and project required.','error');return;}
+  await addTaskToProject(projId,{id:'t'+Date.now(),name,done:false,due:document.getElementById('nt-due').value,owner:document.getElementById('nt-owner').value,priority:document.getElementById('nt-pri').value});
+  closeModal(); showToast('Task added.');
+}
+
+function openAddTask(projId){
+  closeModal();
+  setTimeout(()=>openModal(`
+  <div class="modal-header"><div><div class="modal-title">Add Task</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Task Name *</label><input class="form-input" id="at-name"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="at-owner"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="at-due" type="date"/></div></div>
+    <div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="at-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAddTask('${projId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
+}
+
+async function saveAddTask(projId){
+  const name=document.getElementById('at-name').value.trim();
+  if(!name){showToast('Name required.','error');return;}
+  await addTaskToProject(projId,{id:'t'+Date.now(),name,done:false,due:document.getElementById('at-due').value,owner:document.getElementById('at-owner').value,priority:document.getElementById('at-pri').value});
+  closeModal(); showToast('Task added.'); openProjectDetail(projId);
+}
+
+async function addTaskToProject(projId,task){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const tasks=[...(p.tasks||[]),task];
+  const {error}=await sb.from('projects').update({tasks}).eq('id',projId);
+  if(!error){p.tasks=tasks; renderView(currentView);}
+}
+
+async function toggleTask(projId,taskId){
+  if(!canEdit) return;
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const tasks=(p.tasks||[]).map(t=>t.id===taskId?{...t,done:!t.done}:t);
+  const pct=Math.round(tasks.filter(t=>t.done).length/tasks.length*100);
+  const {error}=await sb.from('projects').update({tasks,progress:pct}).eq('id',projId);
+  if(!error){p.tasks=tasks;p.progress=pct; renderView(currentView);}
+}
+
+function openAddMilestone(projId){
+  closeModal();
+  setTimeout(()=>openModal(`
+  <div class="modal-header"><div><div class="modal-title">Add Milestone</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Milestone Name *</label><input class="form-input" id="am-name" placeholder="e.g. Phase 1 complete"/></div>
+    <div class="form-group"><label class="form-label">Target Date *</label><input class="form-input" id="am-date" type="date"/></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAddMilestone('${projId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
+}
+
+async function saveAddMilestone(projId){
+  const name=document.getElementById('am-name').value.trim();
+  const date=document.getElementById('am-date').value;
+  if(!name||!date){showToast('Name and date required.','error');return;}
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const milestones=[...(p.milestones||[]),{id:'m'+Date.now(),name,date,done:false}];
+  const {error}=await sb.from('projects').update({milestones}).eq('id',projId);
+  if(!error){p.milestones=milestones; closeModal(); showToast('Milestone added.'); openProjectDetail(projId);}
+}
+
+function openAddBlocker(projId){
+  closeModal();
+  setTimeout(()=>openModal(`
+  <div class="modal-header"><div><div class="modal-title">Add Blocker</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="ab-title" placeholder="What is blocked?"/></div>
+    <div class="form-group"><label class="form-label">Detail</label><textarea class="form-textarea" id="ab-desc"></textarea></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner / Resolver</label><input class="form-input" id="ab-owner"/></div><div class="form-group"><label class="form-label">Date Raised</label><input class="form-input" id="ab-date" type="date" value="${new Date().toISOString().split('T')[0]}"/></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAddBlocker('${projId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
+}
+
+async function saveAddBlocker(projId){
+  const title=document.getElementById('ab-title').value.trim();
+  if(!title){showToast('Title required.','error');return;}
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const blockers=[...(p.blockers||[]),{id:'b'+Date.now(),title,desc:document.getElementById('ab-desc').value,owner:document.getElementById('ab-owner').value,raised:document.getElementById('ab-date').value}];
+  const {error}=await sb.from('projects').update({blockers}).eq('id',projId);
+  if(!error){p.blockers=blockers; updateBadges(); closeModal(); showToast('Blocker added.'); openProjectDetail(projId);}
+}
+
+async function resolveBlocker(projId,blockerId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const blockers=(p.blockers||[]).filter(b=>b.id!==blockerId);
+  const {error}=await sb.from('projects').update({blockers}).eq('id',projId);
+  if(!error){p.blockers=blockers; updateBadges(); showToast('Blocker resolved.'); renderView(currentView);}
+}
+
+function openEditKPI(kpiId,currentVal){
+  const def=KPI_DEFS.find(k=>k.id===kpiId);
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Update KPI</div><div class="modal-subtitle">${def?.name}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body"><div class="form-group"><label class="form-label">Current Value (${def?.unit})</label><input class="form-input" id="kpi-val" type="number" step="0.1" value="${currentVal}"/><div class="form-hint">Target: ${def?.target}${def?.unit}</div></div></div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveKPI('${kpiId}')"><i class="ti ti-check"></i> Update</button></div>`);
+}
+
+async function saveKPI(kpiId){
+  const val=parseFloat(document.getElementById('kpi-val').value);
+  if(isNaN(val)){showToast('Enter a valid number.','error');return;}
+  const updates={id:'main',[kpiId]:val};
+  await sb.from('kpi_values').upsert(updates);
+  kpiValues[kpiId]=val; closeModal(); showToast('KPI updated.'); renderView('kpis');
+}
+
+async function openEditUser(uid,canEditCurrent,isAdminCurrent){
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Edit User Access</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body"><div class="form-group"><label class="form-label">Access Level</label><select class="form-select" id="eu-access"><option value="viewer" ${!canEditCurrent&&!isAdminCurrent?'selected':''}>Viewer — read only</option><option value="editor" ${canEditCurrent&&!isAdminCurrent?'selected':''}>Editor — can create and edit</option><option value="admin" ${isAdminCurrent?'selected':''}>Admin — full access</option></select></div></div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveUserAccess('${uid}')"><i class="ti ti-check"></i> Save</button></div>`);
+}
+
+async function saveUserAccess(uid){
+  const level=document.getElementById('eu-access').value;
+  await sb.from('profiles').update({can_edit:level==='editor'||level==='admin',is_admin:level==='admin'}).eq('id',uid);
+  closeModal(); showToast('Access updated.'); nav('team',null);
+}
+
+// ── Modal / Toast ─────────────────────────────────────
+function openModal(html,extraClass=''){
+  document.getElementById('modal-inner').className=`modal ${extraClass}`;
+  document.getElementById('modal-inner').innerHTML=html;
+  document.getElementById('modal-overlay').style.display='flex';
+}
+function closeModal(){document.getElementById('modal-overlay').style.display='none';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  const icon=type==='error'?'ti-alert-circle':'ti-circle-check';
+  const color=type==='error'?'var(--red)':'var(--green)';
+  t.innerHTML=`<i class="ti ${icon}" style="color:${color};font-size:16px"></i> ${msg}`;
+  t.style.display='flex'; clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.style.display='none',3000);
+}
+</script>
+</body>
+</html>
