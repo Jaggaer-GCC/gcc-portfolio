@@ -328,16 +328,22 @@ async function loadProfile(){
   } else {
     const name=currentUser.email.split('@')[0];
     const profile={id:currentUser.id,email:currentUser.email,name,role:'GCC Team',initials:name.slice(0,2).toUpperCase(),can_edit:false,is_admin:false};
-    await sb.from('profiles').insert(profile);
+    const {error:ie}=await sb.from('profiles').insert(profile);
+    if(ie) console.warn('Profile insert error:',ie.message);
     userProfile=profile; canEdit=false;
   }
 }
 
 async function loadData(){
-  const {data:proj}=await sb.from('projects').select('*').order('created_at',{ascending:false});
-  projects=proj||[];
-  const {data:kpi}=await sb.from('kpi_values').select('*').eq('id','main').single();
-  if(kpi) kpiValues={...KPI_DEFAULTS,...kpi};
+  try {
+    const {data:proj,error:pe}=await sb.from('projects').select('*').order('created_at',{ascending:false});
+    if(pe) console.warn('Projects load error:',pe.message);
+    projects=proj||[];
+  } catch(e){ console.warn('Projects exception:',e); projects=[]; }
+  try {
+    const {data:kpi}=await sb.from('kpi_values').select('*').eq('id','main').single();
+    if(kpi) kpiValues={...KPI_DEFAULTS,...kpi};
+  } catch(e){ console.warn('KPI load error:',e); }
 }
 
 function showApp(){
