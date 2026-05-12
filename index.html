@@ -699,8 +699,7 @@ function openEditProject(id){
 
 async function saveEditProject(id){
   const updates={status:document.getElementById('ep-status').value,rag:document.getElementById('ep-rag').value,progress:parseInt(document.getElementById('ep-progress').value)||0,due:document.getElementById('ep-due').value,owner:document.getElementById('ep-owner').value,description:document.getElementById('ep-desc').value,budget:{...(projects.find(p=>p.id===id)?.budget||{}),actual:parseInt(document.getElementById('ep-actual').value)||0}};
-  const result = await dbFetch(`projects?id=eq.${id}`, {method:'PATCH', body:JSON.stringify(updates)});
-  if(result===null && result!==null){showToast('Failed to update.','error');return;}
+  await dbFetch(`projects?id=eq.${id}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify(updates)});
   const idx=projects.findIndex(p=>p.id===id);
   if(idx>-1) projects[idx]={...projects[idx],...updates};
   updateBadges(); closeModal(); showToast('Project updated.'); renderView(currentView);
@@ -748,7 +747,7 @@ async function saveAddTask(projId){
 async function addTaskToProject(projId,task){
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const tasks=[...(p.tasks||[]),task];
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', body:JSON.stringify({tasks})});
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({tasks})});
   p.tasks=tasks; renderView(currentView);
 }
 
@@ -757,7 +756,7 @@ async function toggleTask(projId,taskId){
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const tasks=(p.tasks||[]).map(t=>t.id===taskId?{...t,done:!t.done}:t);
   const pct=Math.round(tasks.filter(t=>t.done).length/tasks.length*100);
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', body:JSON.stringify({tasks,progress:pct})});
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({tasks,progress:pct})});
   p.tasks=tasks;p.progress=pct; renderView(currentView);
 }
 
@@ -778,7 +777,7 @@ async function saveAddMilestone(projId){
   if(!name||!date){showToast('Name and date required.','error');return;}
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const milestones=[...(p.milestones||[]),{id:'m'+Date.now(),name,date,done:false}];
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', body:JSON.stringify({milestones})});
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({milestones})});
   p.milestones=milestones; closeModal(); showToast('Milestone added.'); openProjectDetail(projId);
 }
 
@@ -799,14 +798,14 @@ async function saveAddBlocker(projId){
   if(!title){showToast('Title required.','error');return;}
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const blockers=[...(p.blockers||[]),{id:'b'+Date.now(),title,desc:document.getElementById('ab-desc').value,owner:document.getElementById('ab-owner').value,raised:document.getElementById('ab-date').value}];
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', body:JSON.stringify({blockers})});
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({blockers})});
   p.blockers=blockers; updateBadges(); closeModal(); showToast('Blocker added.'); openProjectDetail(projId);
 }
 
 async function resolveBlocker(projId,blockerId){
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const blockers=(p.blockers||[]).filter(b=>b.id!==blockerId);
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', body:JSON.stringify({blockers})});
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({blockers})});
   p.blockers=blockers; updateBadges(); showToast('Blocker resolved.'); renderView(currentView);
 }
 
@@ -835,7 +834,7 @@ async function openEditUser(uid,canEditCurrent,isAdminCurrent){
 
 async function saveUserAccess(uid){
   const level=document.getElementById('eu-access').value;
-  await dbFetch(`profiles?id=eq.${uid}`, {method:'PATCH', body:JSON.stringify({can_edit:level==='editor'||level==='admin',is_admin:level==='admin'})});
+  await dbFetch(`profiles?id=eq.${uid}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({can_edit:level==='editor'||level==='admin',is_admin:level==='admin'})};
   closeModal(); showToast('Access updated.'); nav('team',null);
 }
 
