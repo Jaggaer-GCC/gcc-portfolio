@@ -309,21 +309,19 @@ document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==
 async function handleSignOut(){await sb.auth.signOut();}
 
 sb.auth.onAuthStateChange(async(event,session)=>{
-  console.log('Auth event:', event, session?.user?.email);
+  console.log('Auth state change:', event, session?.user?.email);
   if(session?.user){
     currentUser=session.user;
-    console.log('Loading profile...');
     await loadProfile();
-    console.log('Loading data...');
     await loadData();
-    console.log('Showing app...');
-    try { showApp(); } catch(e) { console.error('showApp error:', e); }
+    showApp();
   } else {
     currentUser=null; userProfile=null; canEdit=false; projects=[];
     document.getElementById('app').style.display='none';
     document.getElementById('login-screen').style.display='flex';
   }
 });
+
 
 async function loadProfile(){
   const {data}=await sb.from('profiles').select('*').eq('id',currentUser.id).single();
