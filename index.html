@@ -338,25 +338,26 @@ sb.auth.onAuthStateChange(async(event, session) => {
 });
 
 async function dbFetch(path, options={}) {
-  const session = await sb.auth.getSession();
-  const token = session?.data?.session?.access_token || SUPABASE_ANON_KEY;
+  // Use anon key directly - RLS disabled, no session lookup needed
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+    ...(options.headers || {})
+  };
+  if (options.prefer) headers['Prefer'] = options.prefer;
   const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
-    ...options,
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json',
-      'Prefer': options.prefer || '',
-      ...(options.headers || {})
-    }
+    method: options.method || 'GET',
+    headers,
+    body: options.body || undefined
   });
   if (!res.ok && res.status !== 204) {
     const err = await res.text();
-    console.warn('DB error:', err);
+    console.warn('DB error:', path, err);
     return null;
   }
   if (res.status === 204) return null;
-  return res.json();
+  try { return await res.json(); } catch(e) { return null; }
 }
 
 async function loadProfile(){
