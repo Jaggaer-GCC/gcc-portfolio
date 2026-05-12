@@ -193,7 +193,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
       <label class="login-label">Password</label>
       <input class="login-input" id="login-pass" type="password" placeholder="Password"/>
     </div>
-    <button class="login-btn" id="login-btn" onclick="handleLogin()">
+    <button class="login-btn" id="login-btn">
       <span id="login-btn-text">Sign In</span>
       <i class="ti ti-loader-2 spin" id="login-spin" style="display:none"></i>
     </button>
@@ -295,11 +295,9 @@ async function handleLogin(){
   document.getElementById('login-btn-text').style.display='none';
   document.getElementById('login-spin').style.display='inline';
   const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
-  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
   btn.disabled=false;
   document.getElementById('login-btn-text').style.display='inline';
   document.getElementById('login-spin').style.display='none';
-  console.log('Auth result:', data, error);
   if(error){
     document.getElementById('login-error-msg').textContent=error.message;
     err.style.display='flex';
@@ -808,6 +806,8 @@ function showToast(msg,type='success'){
   t.style.display='flex'; clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>t.style.display='none',3000);
 }
+
+document.getElementById('login-btn').addEventListener('click', handleLogin);
 </script>
 </body>
 </html>
