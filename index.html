@@ -309,11 +309,15 @@ document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==
 async function handleSignOut(){await sb.auth.signOut();}
 
 sb.auth.onAuthStateChange(async(event,session)=>{
+  console.log('Auth event:', event, session?.user?.email);
   if(session?.user){
     currentUser=session.user;
+    console.log('Loading profile...');
     await loadProfile();
+    console.log('Loading data...');
     await loadData();
-    showApp();
+    console.log('Showing app...');
+    try { showApp(); } catch(e) { console.error('showApp error:', e); }
   } else {
     currentUser=null; userProfile=null; canEdit=false; projects=[];
     document.getElementById('app').style.display='none';
