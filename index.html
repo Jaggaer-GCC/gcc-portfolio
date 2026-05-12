@@ -533,7 +533,7 @@ function openProjectDetail(id){
       ${p.acceptance?`<div style="margin-bottom:16px"><div class="meta-label" style="margin-bottom:4px">Acceptance Criteria</div><div style="font-size:12px;color:var(--text2);line-height:1.6;padding:8px 10px;background:var(--surface2);border-radius:6px">${p.acceptance}</div></div>`:''}
       <div>
         <div class="meta-label" style="margin-bottom:8px">Tasks (${doneTasks}/${(p.tasks||[]).length} complete)</div>
-        ${(p.tasks||[]).length===0?'<div style="font-size:12px;color:var(--text3)">No tasks yet.</div>':(p.tasks||[]).map(t=>`<div class="task-item"><div class="task-cb ${t.done?'done':''}" onclick="${canEdit?`toggleTask('${id}','${t.id}')`:''}" style="cursor:${canEdit?'pointer':'default'}"><i class="ti ti-check"></i></div><div style="flex:1"><div class="task-name ${t.done?'done':''}">${t.name}</div><div style="font-size:10px;color:var(--text3)">${t.owner||''}</div></div>${priBadge(t.priority)}<div class="task-due" style="color:${isOverdue(t.due)&&!t.done?'var(--red)':'var(--text3)'}">${t.due||''}</div></div>`).join('')}
+        ${(p.tasks||[]).length===0?'<div style="font-size:12px;color:var(--text3)">No tasks yet.</div>':(p.tasks||[]).map(t=>`<div class="task-item"><div class="task-cb ${t.done?'done':''}" onclick="${canEdit?`toggleTask('${id}','${t.id}')`:''}" style="cursor:${canEdit?'pointer':'default'}"><i class="ti ti-check"></i></div><div style="flex:1"><div class="task-name ${t.done?'done':''}">${t.name}</div><div style="font-size:10px;color:var(--text3)">${t.owner||''}</div></div>${priBadge(t.priority)}<div class="task-due" style="color:${isOverdue(t.due)&&!t.done?'var(--red)':'var(--text3)'}">${t.due||''}</div>${canEdit?`<button class="icon-btn" onclick="openEditTask('${id}','${t.id}')" style="flex-shrink:0"><i class="ti ti-edit"></i></button>`:''}</div>`).join('')}
         ${canEdit?`<button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="openAddTask('${id}')"><i class="ti ti-plus"></i> Add task</button>`:''}
       </div>
     </div>
@@ -547,7 +547,7 @@ function openProjectDetail(id){
       </div>
       <div class="sp-panel">
         <div class="meta-label" style="margin-bottom:8px">Milestones</div>
-        ${(p.milestones||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No milestones.</div>':(p.milestones||[]).map(m=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)"><div class="ms-dot" style="background:${m.done?'var(--green)':isOverdue(m.date)?'var(--red)':'var(--text3)'}"></div><div style="flex:1;font-size:11px;color:${m.done?'var(--text3)':'var(--text)'};${m.done?'text-decoration:line-through':''};">${m.name}</div><div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}
+        ${(p.milestones||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No milestones.</div>':(p.milestones||[]).map(m=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)"><div class="ms-dot" style="background:${m.done?'var(--green)':isOverdue(m.date)?'var(--red)':'var(--text3)'}"></div><div style="flex:1;font-size:11px;color:${m.done?'var(--text3)':'var(--text)'};${m.done?'text-decoration:line-through':''};">${m.name}</div><div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${m.date}</div>${canEdit?`<button class="icon-btn" onclick="openEditMilestone('${id}','${m.id}')" style="flex-shrink:0;width:22px;height:22px"><i class="ti ti-edit" style="font-size:12px"></i></button>`:''}</div>`).join('')}
         ${canEdit?`<button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="openAddMilestone('${id}')"><i class="ti ti-plus"></i> Add milestone</button>`:''}
       </div>
       <div class="sp-panel">
@@ -694,7 +694,7 @@ function openEditProject(id){
     <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="ep-owner" value="${p.owner||''}"/></div><div class="form-group"><label class="form-label">Actual Spend ($)</label><input class="form-input" id="ep-actual" type="number" value="${p.budget?.actual||0}"/></div></div>
     <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="ep-desc">${p.description||''}</textarea></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEditProject('${id}')"><i class="ti ti-check"></i> Save</button></div>`);
+  <div class="modal-footer"><button class="btn btn-danger" onclick="deleteProject('${id}')"><i class="ti ti-trash"></i> Delete Project</button><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEditProject('${id}')"><i class="ti ti-check"></i> Save</button></div>`);
 }
 
 async function saveEditProject(id){
@@ -703,6 +703,81 @@ async function saveEditProject(id){
   const idx=projects.findIndex(p=>p.id===id);
   if(idx>-1) projects[idx]={...projects[idx],...updates};
   updateBadges(); closeModal(); showToast('Project updated.'); renderView(currentView);
+}
+
+async function deleteProject(id){
+  const p=projects.find(x=>x.id===id); if(!p) return;
+  if(!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+  await dbFetch(`projects?id=eq.${id}`, {method:'DELETE'});
+  projects=projects.filter(x=>x.id!==id);
+  updateBadges(); closeModal(); showToast('Project deleted.'); renderView('projects');
+}
+
+function openEditTask(projId, taskId){
+  if(!canEdit) return;
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const t=p.tasks.find(x=>x.id===taskId); if(!t) return;
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Edit Task</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Task Name</label><input class="form-input" id="et-name" value="${t.name}"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="et-owner" value="${t.owner||''}"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="et-due" type="date" value="${t.due||''}"/></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="et-pri"><option ${t.priority==='P1'?'selected':''}>P1</option><option ${t.priority==='P2'?'selected':''}>P2</option><option ${t.priority==='P3'?'selected':''}>P3</option></select></div></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" onclick="deleteTask('${projId}','${taskId}')"><i class="ti ti-trash"></i> Delete</button>
+    <button class="btn btn-ghost" onclick="openProjectDetail('${projId}')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEditTask('${projId}','${taskId}')"><i class="ti ti-check"></i> Save</button>
+  </div>`);
+}
+
+async function saveEditTask(projId, taskId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const tasks=(p.tasks||[]).map(t=>t.id===taskId?{...t,name:document.getElementById('et-name').value,owner:document.getElementById('et-owner').value,due:document.getElementById('et-due').value,priority:document.getElementById('et-pri').value}:t);
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({tasks})});
+  p.tasks=tasks; showToast('Task updated.'); openProjectDetail(projId);
+}
+
+async function deleteTask(projId, taskId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  if(!confirm('Delete this task?')) return;
+  const tasks=(p.tasks||[]).filter(t=>t.id!==taskId);
+  const pct=tasks.length>0?Math.round(tasks.filter(t=>t.done).length/tasks.length*100):0;
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({tasks,progress:pct})});
+  p.tasks=tasks; p.progress=pct; showToast('Task deleted.'); openProjectDetail(projId);
+}
+
+function openEditMilestone(projId, msId){
+  if(!canEdit) return;
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const m=p.milestones.find(x=>x.id===msId); if(!m) return;
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Edit Milestone</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Milestone Name</label><input class="form-input" id="em-name" value="${m.name}"/></div>
+    <div class="form-group"><label class="form-label">Target Date</label><input class="form-input" id="em-date" type="date" value="${m.date||''}"/></div>
+    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="em-done"><option value="false" ${!m.done?'selected':''}>Pending</option><option value="true" ${m.done?'selected':''}>Completed</option></select></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" onclick="deleteMilestone('${projId}','${msId}')"><i class="ti ti-trash"></i> Delete</button>
+    <button class="btn btn-ghost" onclick="openProjectDetail('${projId}')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEditMilestone('${projId}','${msId}')"><i class="ti ti-check"></i> Save</button>
+  </div>`);
+}
+
+async function saveEditMilestone(projId, msId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const milestones=(p.milestones||[]).map(m=>m.id===msId?{...m,name:document.getElementById('em-name').value,date:document.getElementById('em-date').value,done:document.getElementById('em-done').value==='true'}:m);
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({milestones})});
+  p.milestones=milestones; showToast('Milestone updated.'); openProjectDetail(projId);
+}
+
+async function deleteMilestone(projId, msId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  if(!confirm('Delete this milestone?')) return;
+  const milestones=(p.milestones||[]).filter(m=>m.id!==msId);
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({milestones})});
+  p.milestones=milestones; showToast('Milestone deleted.'); openProjectDetail(projId);
 }
 
 function openNewTask(){
@@ -755,9 +830,13 @@ async function toggleTask(projId,taskId){
   if(!canEdit) return;
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const tasks=(p.tasks||[]).map(t=>t.id===taskId?{...t,done:!t.done}:t);
-  const pct=Math.round(tasks.filter(t=>t.done).length/tasks.length*100);
+  const pct=tasks.length>0?Math.round(tasks.filter(t=>t.done).length/tasks.length*100):0;
   await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({tasks,progress:pct})});
-  p.tasks=tasks;p.progress=pct; renderView(currentView);
+  p.tasks=tasks; p.progress=pct;
+  // Refresh modal if open, otherwise refresh view
+  const modalOpen=document.getElementById('modal-overlay').style.display!=='none';
+  if(modalOpen) openProjectDetail(projId);
+  else renderView(currentView);
 }
 
 function openAddMilestone(projId){
