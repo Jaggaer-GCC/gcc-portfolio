@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><title>Auth Test</title></head>
+<body>
+<h2>Supabase Auth Test</h2>
+<input id="email" type="email" placeholder="email" style="display:block;margin:10px 0;padding:8px;width:300px"/>
+<input id="pass" type="password" placeholder="password" style="display:block;margin:10px 0;padding:8px;width:300px"/>
+<button onclick="test()" style="padding:8px 16px">Test Login</button>
+<pre id="result" style="margin-top:20px;background:#eee;padding:10px"></pre>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb = supabase.createClient(
+  'https://tuubqxnphoifqjbumgxa.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dWJxeG5waG9pZnFqYnVtZ3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDQ2MjAsImV4cCI6MjA5NDEyMDYyMH0.U0Tdp6GUBZMF16z00WvxmMTRKtWaJQEX954oy_w70Q0'
+);
+async function test(){
+  document.getElementById('result').textContent = 'Trying...';
+  try {
+    const {data,error} = await sb.auth.signInWithPassword({
+      email: document.getElementById('email').value,
+      password: document.getElementById('pass').value
+    });
+    document.getElementById('result').textContent = JSON.stringify({data,error},null,2);
+  } catch(e) {
+    document.getElementById('result').textContent = 'EXCEPTION: ' + e.message;
+  }
+}
+</script>
+</body>
+</html>
