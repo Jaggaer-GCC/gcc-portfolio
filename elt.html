@@ -182,7 +182,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
   <div class="sidebar">
     <div class="sidebar-logo">
       <div class="logo-icon">G</div>
-      <div><div class="logo-text">GCC ELT Updates</div><div class="logo-sub">Weekly Readout</div></div>
+      <div><div class="logo-text">GCC ELT Updates</div><div class="logo-sub" style="color:var(--amber)">DEV ENVIRONMENT</div></div>
     </div>
     <div class="sidebar-nav">
       <div class="nav-section">
@@ -236,8 +236,8 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 <div id="toast" class="toast" style="display:none"></div>
 
 <script>
-const SUPABASE_URL = 'https://tuubqxnphoifqjbumgxa.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dWJxeG5waG9pZnFqYnVtZ3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDQ2MjAsImV4cCI6MjA5NDEyMDYyMH0.U0Tdp6GUBZMF16z00WvxmMTRKtWaJQEX954oy_w70Q0';
+const SUPABASE_URL = 'https://yhjsxfmyhzrrleqgaclz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InloanN4Zm15aHpycmxlcWdhY2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MTc3OTYsImV4cCI6MjA5NDE5Mzc5Nn0.ym8ns4Tk2fwRQAWUKpJdBoZr1_rfR6OpYOekKnw9V8w';
 
 const SECTIONS = [
   {id:'kpi_updates',   label:'KPI / SPO Updates',          icon:'ti-chart-bar',     question:'Any KPIs or SPOs off track this week? What support is needed?',                              placeholder:'e.g. CSAT trending below target, need cross-functional alignment on X...'},
@@ -295,7 +295,7 @@ function canEditSubmission(sub) {
   if (!sub) return false;
   if (isSubmissionLocked(sub.week_date)) return false;
   // Own submission or superadmin
-  return sub.user_id === currentUser?.id || isSuperadmin;
+  return sub.user_id === currentUser?.id || sub.user_email === currentUser?.email || isSuperadmin;
 }
 
 // ── DB helpers ─────────────────────────────────────────
@@ -499,7 +499,12 @@ function renderView(view) {
 // ── Helpers ────────────────────────────────────────────
 function getWeekSubs(week) { return submissions.filter(s => s.week_date === week); }
 function allWeeks() { return [...new Set(submissions.map(s => s.week_date))].sort().reverse(); }
-function getMySubmission(week) { return submissions.find(s => s.week_date === week && s.user_id === currentUser?.id); }
+function getMySubmission(week) {
+  return submissions.find(s => s.week_date === week && (
+    s.user_id === currentUser?.id ||
+    s.user_email === currentUser?.email
+  ));
+}
 function getUserDisplayName(profile) { return profile.display_name || profile.name || profile.email; }
 function submittedUserIds(week) { return getWeekSubs(week).map(s => s.user_id); }
 
@@ -527,7 +532,7 @@ function renderHome() {
           ? '<div style="font-size:12px;color:var(--text3)">No ELT users configured yet.</div>'
           : eltUsers.map(u => {
             const uid = u.id;
-            const sub = thisWeekSubs.find(s => s.user_id === uid);
+            const sub = thisWeekSubs.find(s => s.user_id === uid || s.user_email === u.email);
             const done = !!sub;
             const isMe = uid === currentUser?.id;
             const dotColor = done ? 'var(--green)' : 'var(--surface3)';
@@ -789,7 +794,7 @@ async function viewConsolidated(week) {
       <div class="modal-title">ELT Report — Week of ${week}</div>
       <div style="margin-top:6px">
         ${subs.map(s => `<span class="badge badge-green">${s.user_display_name||s.submitter}</span>`).join('')}
-        ${eltUsers.filter(u => !subs.find(s => s.user_id===u.id)).map(u => `<span class="badge badge-gray">${getUserDisplayName(u)}</span>`).join('')}
+        ${eltUsers.filter(u => !subs.find(s => s.user_id===u.id || s.user_email===u.email)).map(u => `<span class="badge badge-gray">${getUserDisplayName(u)}</span>`).join('')}
       </div>
     </div>
     <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
@@ -832,7 +837,7 @@ function renderHistory() {
       </div>
       <div style="margin-bottom:10px">
         ${subs.map(s => `<span class="badge badge-green" style="cursor:pointer" onclick="viewSubmission('${s.id}')">${s.user_display_name||s.submitter||'—'}</span>`).join('')}
-        ${eltUsers.filter(u => !subs.find(s => s.user_id===u.id)).map(u => `<span class="badge badge-gray">${getUserDisplayName(u)}</span>`).join('')}
+        ${eltUsers.filter(u => !subs.find(s => s.user_id===u.id || s.user_email===u.email)).map(u => `<span class="badge badge-gray">${getUserDisplayName(u)}</span>`).join('')}
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-ghost" style="font-size:11px" onclick="viewConsolidated('${week}')"><i class="ti ti-file-text"></i> Consolidated</button>
