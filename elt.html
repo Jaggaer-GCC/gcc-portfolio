@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GCC ELT Weekly Update</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>window.GCC_PORTAL = "elt";</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--surface:#171b26;--surface2:#1e2333;--surface3:#252a3d;
+  --border:#2a3050;--border2:#3a4060;
+  --text:#e8eaf0;--text2:#8892b0;--text3:#556080;
+  --blue:#4f8ef7;--blue-bg:#1a2540;--blue-dim:#2a3f6f;
+  --green:#3ecf8e;--green-bg:#0f2920;
+  --amber:#f5a623;--amber-bg:#2a1f0a;
+  --red:#ef5350;--red-bg:#2a1010;
+  --purple:#9b72f7;--purple-bg:#1e1535;
+  --radius:8px;--radius-lg:12px;
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:18px 18px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
+.logo-text{font-size:13px;font-weight:600;color:var(--text)}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.sidebar-nav{padding:12px 8px;flex:1}
+.nav-section{margin-bottom:20px}
+.nav-label{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:0 10px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;color:var(--text2);font-size:13px;transition:all .12s;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif;text-decoration:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--blue-bg);color:var(--blue)}
+.nav-item i{font-size:16px;width:18px;flex-shrink:0}
+.sidebar-user{padding:12px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--blue);flex-shrink:0}
+.user-name{font-size:12px;font-weight:500;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:10px;color:var(--text3)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{padding:13px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:600;color:var(--text)}
+.topbar-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.content{flex:1;padding:24px;overflow-y:auto}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .12s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.btn i{font-size:14px}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:#3d7de0}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.icon-btn{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:all .12s}
+.icon-btn:hover{background:var(--surface3);color:var(--text)}
+.icon-btn i{font-size:15px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px}
+.panel-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px}
+.stat-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-value{font-size:28px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace;line-height:1;margin-bottom:4px}
+.stat-meta{font-size:11px;color:var(--text3)}
+.form-group{margin-bottom:16px}
+.form-label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border .12s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--blue)}
+.form-textarea{resize:vertical;min-height:90px;line-height:1.6}
+.form-select option{background:var(--surface2)}
+.progress-track{display:flex;gap:4px;margin:14px 0 20px}
+.pip{height:4px;flex:1;border-radius:2px;background:var(--surface3)}
+.pip.done{background:var(--green)}
+.pip.active{background:var(--blue)}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;margin-right:4px;margin-bottom:4px;white-space:nowrap}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-gray{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.week-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-size:13px;font-weight:600;color:var(--text)}
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
+.login-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:36px;width:360px}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.login-logo-icon{width:40px;height:40px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700}
+.login-logo-text{font-size:17px;font-weight:600;color:var(--text)}
+.login-form-group{margin-bottom:14px}
+.login-label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block}
+.login-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border .12s}
+.login-input:focus{border-color:var(--blue)}
+.login-btn{width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:6px;transition:background .12s;display:flex;align-items:center;justify-content:center;gap:8px}
+.login-btn:hover{background:#3d7de0}
+.login-btn:disabled{opacity:.6;cursor:not-allowed}
+.login-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:16px}
+.error-banner{background:var(--red-bg);border:1px solid rgba(239,83,80,.3);border-radius:6px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:var(--red)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--text);z-index:2000;display:flex;align-items:center;gap:8px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:600px;max-height:92vh;overflow-y:auto}
+.modal-wide{max-width:820px}
+.modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:600;color:var(--text)}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:12px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text3)}
+.empty-state i{font-size:36px;margin-bottom:12px;display:block}
+.empty-state-title{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.spin{animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.answer-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.answer-section:last-child{border-bottom:none;margin-bottom:0}
+.answer-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.answer-text{font-size:13px;color:var(--text2);line-height:1.6}
+.file-drop{border:2px dashed var(--border2);border-radius:var(--radius-lg);padding:24px;text-align:center;cursor:pointer;transition:all .15s}
+.file-drop:hover{border-color:var(--blue);background:var(--blue-bg)}
+.file-drop.dragging{border-color:var(--blue);background:var(--blue-bg)}
+</style>
+</head>
+<body>
+
+<!-- PAGE LOADING -->
+<div id="page-loading" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:600;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div style="width:40px;height:40px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700">G</div>
+  <div style="color:var(--text3);font-size:13px">Loading...</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">G</div>
+      <div>
+        <div class="login-logo-text">GCC ELT Updates</div>
+        <div style="font-size:11px;color:var(--text3)">Weekly Leadership Readout</div>
+      </div>
+    </div>
+    <div id="login-error" class="error-banner" style="display:none">
+      <i class="ti ti-alert-circle"></i><span id="login-error-msg">Invalid credentials</span>
+    </div>
+    <div class="login-form-group">
+      <label class="login-label">Email</label>
+      <input class="login-input" id="login-email" type="email" placeholder="you@company.com"/>
+    </div>
+    <div class="login-form-group">
+      <label class="login-label">Password</label>
+      <input class="login-input" id="login-pass" type="password" placeholder="Password"/>
+    </div>
+    <button class="login-btn" id="login-btn" onclick="handleLogin()">
+      <span id="login-btn-text">Sign In</span>
+      <i class="ti ti-loader-2 spin" id="login-spin" style="display:none"></i>
+    </button>
+    <div class="login-hint">Same credentials as GCC Portfolio</div>
+  </div>
+</div>
+
+<!-- PORTAL SELECTOR -->
+<div id="portal-selector" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:24px">
+  <div style="text-align:center;margin-bottom:8px">
+    <div style="width:48px;height:48px;background:var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;margin:0 auto 12px">G</div>
+    <div style="font-size:20px;font-weight:600;color:var(--text)">GCC Operations Suite</div>
+    <div style="font-size:13px;color:var(--text3);margin-top:4px">Welcome back, <span id="ps-name"></span>. Select a portal to continue.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:520px;width:100%;padding:0 20px">
+    <div onclick="selectPortal('portfolio')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;cursor:pointer;transition:all .15s;text-align:center" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
+      <i class="ti ti-folders" style="font-size:32px;color:var(--blue);margin-bottom:12px;display:block"></i>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">Portfolio Tool</div>
+      <div style="font-size:11px;color:var(--text3)">Projects, KPIs, milestones and blockers</div>
+    </div>
+    <div onclick="selectPortal('elt')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;cursor:pointer;transition:all .15s;text-align:center" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
+      <i class="ti ti-messages" style="font-size:32px;color:var(--purple);margin-bottom:12px;display:block"></i>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">ELT Weekly Updates</div>
+      <div style="font-size:11px;color:var(--text3)">Leadership readouts and weekly submissions</div>
+    </div>
+  </div>
+  <button onclick="handleSignOut()" style="background:transparent;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:8px">Sign out</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="app" style="display:none">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">G</div>
+      <div><div class="logo-text">GCC ELT Updates</div><div class="logo-sub">Weekly Readout</div></div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">ELT Tool</div>
+        <button class="nav-item active" onclick="nav('home',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
+        <button class="nav-item" onclick="nav('submit',this)" id="nav-submit"><i class="ti ti-edit"></i>Submit Update</button>
+        <button class="nav-item" onclick="nav('history',this)"><i class="ti ti-history"></i>History</button>
+      </div>
+      <div class="nav-section" id="elt-admin-nav" style="display:none">
+        <div class="nav-label">Admin</div>
+        <button class="nav-item" onclick="nav('team',this)"><i class="ti ti-users"></i>Team</button>
+      </div>
+    </div>
+    <div id="portal-toggle" style="display:none;padding:10px 14px;border-top:1px solid var(--border)">
+      <div style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Switch Portal</div>
+      <button onclick="switchPortal('portfolio')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;background:var(--blue-bg);color:var(--blue);border:none;cursor:pointer;font-size:12px;font-weight:500;width:100%;font-family:'DM Sans',sans-serif">
+        <i class="ti ti-folders" style="font-size:15px"></i>Portfolio Tool
+      </button>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="user-av">??</div>
+      <div style="flex:1;min-width:0">
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-role" id="user-role">GCC</div>
+      </div>
+      <button class="icon-btn" onclick="handleSignOut()" title="Sign out"><i class="ti ti-logout" style="font-size:15px"></i></button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div style="font-size:11px;color:var(--text3)" id="page-sub">GCC ELT Weekly Update Tool</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary" id="btn-submit" onclick="nav('submit',null)"><i class="ti ti-edit"></i> <span id="btn-submit-label">Submit Update</span></button>
+      </div>
+    </div>
+    <div class="content" id="content">
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3)">
+        <i class="ti ti-loader-2 spin" style="font-size:24px"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal-inner"></div>
+</div>
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+const SUPABASE_URL = 'https://tuubqxnphoifqjbumgxa.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dWJxeG5waG9pZnFqYnVtZ3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDQ2MjAsImV4cCI6MjA5NDEyMDYyMH0.U0Tdp6GUBZMF16z00WvxmMTRKtWaJQEX954oy_w70Q0';
+
+const SECTIONS = [
+  {id:'kpi_updates',   label:'KPI / SPO Updates',          icon:'ti-chart-bar',     question:'Any KPIs or SPOs off track this week? What support is needed?',                              placeholder:'e.g. CSAT trending below target, need cross-functional alignment on X...'},
+  {id:'celebrations',  label:'Celebrations & Wins',         icon:'ti-star',          question:'What went really well last week? Any team members who went above and beyond?',               placeholder:'e.g. Customer X had a successful go-live, [Name] drove exceptional results on...'},
+  {id:'coaching',      label:'Coaching Moments',            icon:'ti-bulb',          question:'What was the most coachable moment or learning opportunity this week?',                       placeholder:'e.g. [Name] needed guidance on X, coached them to...'},
+  {id:'risks',         label:'Risks & Escalations',         icon:'ti-alert-triangle',question:'Top challenges this week? Any issues requiring cross-functional support or ELT decisions?',  placeholder:'e.g. Customer X escalation, product gap impacting renewals, resource constraint...'},
+  {id:'execution',     label:'Weekly Execution',            icon:'ti-check',         question:"How did you perform against last week's top 3 priorities?",                                  placeholder:'e.g. Completed X, Y is in progress, Z was deprioritized due to...'},
+  {id:'priorities',    label:"This Week's Priorities",      icon:'ti-target',        question:'What are your top 3 priorities / big rocks for this week?',                                  placeholder:'1. ...\n2. ...\n3. ...'},
+  {id:'dependencies',  label:'Dependencies & Help Needed',  icon:'ti-link',          question:'Any dependencies or help needed from other teams or leadership?',                            placeholder:'e.g. Need decision on X from ELT, waiting on Y from Engineering...'},
+];
+
+// ── State ──────────────────────────────────────────────
+if (!window._sbElt) {
+  window._sbElt = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession:true, storageKey:'gcc-suite-auth', autoRefreshToken:true, detectSessionInUrl:false }
+  });
+}
+const sb = window._sbElt;
+
+let currentUser=null, userProfile=null, isSuperadmin=false;
+let currentView='home';
+let submissions=[], eltUsers=[], weekFiles={};
+let toastTimer=null;
+let formStep=-1, formAnswers={};
+
+// ── Week helpers ──────────────────────────────────────
+function getMondayOfWeek(date=new Date()) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun, 1=Mon...6=Sat
+  const diff = day === 0 ? -6 : 1 - day; // days back to Monday
+  d.setDate(d.getDate() + diff);
+  // Use local date parts to avoid UTC timezone shift
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+dd;
+}
+
+function currentWeek() { return getMondayOfWeek(); }
+
+// Submission locked at noon ET Saturday
+function isSubmissionLocked(weekDate) {
+  const now = new Date();
+  // Get Saturday of this week (Monday + 5 days)
+  const monday = new Date(weekDate);
+  const saturday = new Date(monday);
+  saturday.setDate(monday.getDate() + 5);
+  saturday.setHours(12, 0, 0, 0); // noon local (approximate — ET)
+  // Add 4 hours offset to account for ET (UTC-4 summer, UTC-5 winter)
+  const saturdayET = new Date(saturday.getTime() + (saturday.getTimezoneOffset() + 240) * 60000);
+  return now > saturdayET;
+}
+
+function canEditSubmission(sub) {
+  if (!sub) return false;
+  if (isSubmissionLocked(sub.week_date)) return false;
+  // Own submission or superadmin
+  return sub.user_id === currentUser?.id || isSuperadmin;
+}
+
+// ── DB helpers ─────────────────────────────────────────
+async function dbFetch(path, options={}) {
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+    ...(options.headers || {})
+  };
+  if (options.prefer) headers['Prefer'] = options.prefer;
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    method: options.method || 'GET', headers, body: options.body || undefined
+  });
+  if (!res.ok && res.status !== 204) { console.warn('DB:', path, await res.text()); return null; }
+  if (res.status === 204) return null;
+  try { return await res.json(); } catch { return null; }
+}
+
+// ── Auth ──────────────────────────────────────────────
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') handleLogin(); });
+document.getElementById('login-email').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-pass').focus(); });
+
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  err.style.display='none'; btn.disabled=true;
+  document.getElementById('login-btn-text').style.display='none';
+  document.getElementById('login-spin').style.display='inline';
+  const {error} = await sb.auth.signInWithPassword({email, password:pass});
+  btn.disabled=false;
+  document.getElementById('login-btn-text').style.display='inline';
+  document.getElementById('login-spin').style.display='none';
+  if (error) { document.getElementById('login-error-msg').textContent=error.message; err.style.display='flex'; }
+}
+
+async function handleSignOut() {
+  clearPortalChoice();
+  await sb.auth.signOut();
+}
+
+document.getElementById('login-screen').style.display='none';
+document.getElementById('page-loading').style.display='flex';
+
+function hasPortalAccess(portal) {
+  if (!userProfile) return false;
+  const access = userProfile.portal_access || 'portfolio';
+  return access === 'both' || access === portal;
+}
+
+function showPortalSelector() {
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='none';
+  document.getElementById('page-loading').style.display='none';
+  document.getElementById('portal-selector').style.display='flex';
+  document.getElementById('ps-name').textContent = userProfile?.name || currentUser.email;
+}
+
+function selectPortal(portal) {
+  document.getElementById('portal-selector').style.display='none';
+  setPortalChoice(portal);
+  if (portal === 'elt') showApp();
+  else window.location.href = 'index.html';
+}
+
+function switchPortal(portal) {
+  setPortalChoice(portal);
+  if (portal === 'elt') showApp();
+  else window.location.href = 'index.html';
+}
+
+function getPortalChoice() { try { return localStorage.getItem('gcc-portal-choice'); } catch { return null; } }
+function setPortalChoice(p) { try { localStorage.setItem('gcc-portal-choice', p); } catch {} }
+function clearPortalChoice() { try { localStorage.removeItem('gcc-portal-choice'); } catch {} }
+
+setTimeout(() => {
+  const loading = document.getElementById('page-loading');
+  if (loading && loading.style.display !== 'none') {
+    loading.style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+  }
+}, 3000);
+
+sb.auth.onAuthStateChange(async(event, session) => {
+  if (session?.user && (event==='SIGNED_IN'||event==='INITIAL_SESSION')) {
+    const appVisible = document.getElementById('app').style.display==='flex';
+    const selectorVisible = document.getElementById('portal-selector').style.display==='flex';
+    if (appVisible || selectorVisible) return;
+    currentUser = session.user;
+    await loadProfile();
+    if (!hasPortalAccess('elt')) {
+      setPortalChoice('portfolio');
+      window.location.href = 'index.html';
+      return;
+    }
+    await loadData();
+    const choice = getPortalChoice();
+    if (userProfile?.portal_access === 'both') {
+      if (choice === 'elt') { showApp(); }
+      else if (choice === 'portfolio') { window.location.href = 'index.html'; }
+      else if (event === 'SIGNED_IN') { showPortalSelector(); }
+      else { showApp(); }
+    } else {
+      setPortalChoice('elt');
+      showApp();
+    }
+  } else if (event==='SIGNED_OUT' || (event==='INITIAL_SESSION' && !session)) {
+    clearPortalChoice();
+    currentUser=null; userProfile=null; submissions=[]; eltUsers=[];
+    document.getElementById('portal-selector').style.display='none';
+    document.getElementById('app').style.display='none';
+    document.getElementById('page-loading').style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+  }
+});
+
+async function loadProfile() {
+  try {
+    const data = await dbFetch(`profiles?id=eq.${currentUser.id}&limit=1`);
+    if (data && data.length > 0) {
+      userProfile = data[0];
+    } else {
+      const byEmail = await dbFetch('profiles?email=eq.' + encodeURIComponent(currentUser.email) + '&limit=1');
+      userProfile = byEmail && byEmail.length > 0 ? byEmail[0] : {
+        name: currentUser.email, role:'GCC', initials:'??', portal_access:'elt', is_admin:false, can_edit:false
+      };
+    }
+    isSuperadmin = userProfile?.is_admin && userProfile?.portal_access === 'both';
+  } catch(e) {
+    userProfile = { name:currentUser.email, role:'GCC', initials:'??', portal_access:'elt' };
+  }
+}
+
+async function loadData() {
+  try {
+    const [subs, users, files] = await Promise.all([
+      dbFetch('elt_submissions?order=created_at.desc'),
+      dbFetch('profiles?order=display_name'),
+      dbFetch('elt_files?order=uploaded_at.desc')
+    ]);
+    submissions = subs || [];
+    eltUsers = (users || []).filter(u => u.portal_access === 'elt' || u.portal_access === 'both');
+    // Build weekFiles lookup: { week_date: [file, ...] }
+    weekFiles = {};
+    (files || []).forEach(f => {
+      if (!weekFiles[f.week_date]) weekFiles[f.week_date] = [];
+      weekFiles[f.week_date].push(f);
+    });
+  } catch { submissions=[]; eltUsers=[]; weekFiles={}; }
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('portal-selector').style.display='none';
+  document.getElementById('page-loading').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('user-av').textContent = userProfile?.initials || '??';
+  document.getElementById('user-name').textContent = userProfile?.name || currentUser.email;
+  document.getElementById('user-role').textContent = userProfile?.role || 'GCC';
+  if (userProfile?.portal_access === 'both') document.getElementById('portal-toggle').style.display='block';
+  if (userProfile?.is_admin) document.getElementById('elt-admin-nav').style.display='block';
+
+  // Update submit button label based on whether user already submitted
+  const myWeekSub = getMySubmission(currentWeek());
+  const locked = isSubmissionLocked(currentWeek());
+  const btnLabel = document.getElementById('btn-submit-label');
+  if (locked) { btnLabel.textContent = 'Submission Locked'; document.getElementById('btn-submit').disabled = true; }
+  else if (myWeekSub) { btnLabel.textContent = 'Edit My Submission'; }
+  else { btnLabel.textContent = 'Submit Update'; }
+
+  renderView('home');
+}
+
+// ── Nav ────────────────────────────────────────────────
+function nav(view, el) {
+  document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderView(view);
+}
+
+function renderView(view) {
+  currentView = view;
+  const titles = {
+    home:    ['Dashboard','GCC ELT Weekly Update Tool'],
+    submit:  ['Submit Update','Complete your weekly leadership update'],
+    history: ['Submission History','All weekly ELT submissions'],
+    team:    ['Team','ELT team members'],
+  };
+  const [t,s] = titles[view] || [view,''];
+  document.getElementById('page-title').textContent = t;
+  document.getElementById('page-sub').textContent = s;
+  const c = document.getElementById('content');
+  if (view==='home')    c.innerHTML = renderHome();
+  else if (view==='submit')   c.innerHTML = renderSubmitForm();
+  else if (view==='history')  c.innerHTML = renderHistory();
+  else if (view==='team')     renderELTTeam();
+}
+
+// ── Helpers ────────────────────────────────────────────
+function getWeekSubs(week) { return submissions.filter(s => s.week_date === week); }
+function allWeeks() { return [...new Set(submissions.map(s => s.week_date))].sort().reverse(); }
+function getMySubmission(week) { return submissions.find(s => s.week_date === week && s.user_id === currentUser?.id); }
+function getUserDisplayName(profile) { return profile.display_name || profile.name || profile.email; }
+function submittedUserIds(week) { return getWeekSubs(week).map(s => s.user_id); }
+
+// ── Dashboard ──────────────────────────────────────────
+function renderHome() {
+  const thisWeek = currentWeek();
+  const thisWeekSubs = getWeekSubs(thisWeek);
+  const submittedIds = submittedUserIds(thisWeek);
+  const weeks = allWeeks();
+  const locked = isSubmissionLocked(thisWeek);
+
+  return `
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">This week</div><div class="stat-value">${thisWeekSubs.length}/${eltUsers.length}</div><div class="stat-meta">submitted</div></div>
+    <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value" style="color:var(--amber)">${eltUsers.length - thisWeekSubs.length}</div><div class="stat-meta">${locked?'Locked':'Open'}</div></div>
+    <div class="stat-card"><div class="stat-label">Total weeks</div><div class="stat-value">${weeks.length}</div><div class="stat-meta">on record</div></div>
+    <div class="stat-card"><div class="stat-label">Total submissions</div><div class="stat-value">${submissions.length}</div><div class="stat-meta">all time</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+    <div class="panel">
+      <div class="panel-title">Week of ${thisWeek} ${locked?'<span class="badge badge-amber" style="margin-left:4px">Locked</span>':''}</div>
+      <div style="margin-bottom:14px">
+        ${eltUsers.length === 0
+          ? '<div style="font-size:12px;color:var(--text3)">No ELT users configured yet.</div>'
+          : eltUsers.map(u => {
+            const uid = u.id;
+            const sub = thisWeekSubs.find(s => s.user_id === uid);
+            const done = !!sub;
+            const isMe = uid === currentUser?.id;
+            const dotColor = done ? 'var(--green)' : 'var(--surface3)';
+            const nameColor = done ? 'var(--text)' : 'var(--text2)';
+            const youBadge = isMe ? ' <span style="font-size:10px;color:var(--text3)">(you)</span>' : '';
+            const actionBtn = done
+              ? '<button class="btn btn-ghost" style="font-size:10px;padding:3px 8px" onclick="viewSubmission(\''+sub.id+'\')">View' + (canEditSubmission(sub) ? ' / Edit' : '') + '</button>'
+              : '<span class="badge badge-gray">Pending</span>';
+            return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
+              + '<div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:'+dotColor+'"></div>'
+              + '<span style="font-size:13px;color:'+nameColor+';flex:1">'+getUserDisplayName(u)+youBadge+'</span>'
+              + '<span style="font-size:11px;color:var(--text3)">'+u.role+'</span>'
+              + actionBtn
+              + '</div>';
+          }).join('')}
+      </div>
+      ${!locked
+        ? `<button class="btn btn-primary" onclick="nav('submit',null)" style="width:100%">
+            <i class="ti ti-edit"></i> ${getMySubmission(thisWeek) ? "Edit My Submission" : "Submit This Week's Update"}
+          </button>`
+        : `<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Submissions closed for this week.</div>`}
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Recent weeks</div>
+      ${weeks.length === 0
+        ? '<div style="font-size:12px;color:var(--text3)">No submissions yet.</div>'
+        : weeks.slice(0,5).map(week => {
+          const subs = getWeekSubs(week);
+          return `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+            <div class="week-row">
+              <span style="font-size:13px;font-weight:500;color:var(--text)">Week of ${week}</span>
+              <span style="font-size:11px;color:var(--text3)">${subs.length}/${eltUsers.length}</span>
+            </div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">
+              ${subs.map(s=>`<span class="badge badge-green">${s.user_display_name||s.submitter||'—'}</span>`).join('')}
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              <button class="btn btn-ghost" style="font-size:11px" onclick="viewConsolidated('${week}')"><i class="ti ti-file-text"></i> Consolidated</button>
+              ${isSuperadmin?'<button class="btn btn-ghost" style="font-size:11px" onclick="openFileUpload(\'' + week + '\')"><i class="ti ti-upload"></i> Upload file</button>':''}
+              ${(weekFiles[week]||[]).length > 0 ? '<span class="badge badge-blue"><i class="ti ti-paperclip" style="font-size:10px;margin-right:3px"></i>' + (weekFiles[week]||[]).length + ' file' + ((weekFiles[week]||[]).length > 1 ? 's' : '') + '</span>' : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      ${weeks.length > 5 ? `<button class="btn btn-ghost" style="margin-top:10px;font-size:11px;width:100%" onclick="nav('history',null)">View all history</button>` : ''}
+    </div>
+  </div>`;
+}
+
+// ── Submit form ────────────────────────────────────────
+function renderSubmitForm() {
+  const week = currentWeek();
+  const locked = isSubmissionLocked(week);
+  const mySub = getMySubmission(week);
+
+  if (locked) {
+    return `<div class="empty-state"><i class="ti ti-lock" style="color:var(--amber)"></i>
+      <div class="empty-state-title">Submissions are closed</div>
+      <div>The submission window for week of ${week} closed at noon ET on Saturday.</div>
+      <button class="btn btn-ghost" style="margin-top:16px" onclick="nav('history',null)">View history</button>
+    </div>`;
+  }
+
+  // Pre-fill from existing submission if editing
+  if (formStep === -1 && mySub && Object.keys(formAnswers).length === 0) {
+    formAnswers = mySub.answers || {};
+  }
+
+  if (formStep === -1) {
+    const displayName = getUserDisplayName(userProfile);
+    return `<div style="max-width:560px">
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-title">Your submission</div>
+        <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--surface2);border-radius:8px">
+          <div class="user-avatar" style="width:36px;height:36px;font-size:12px">${userProfile?.initials||'??'}</div>
+          <div>
+            <div style="font-size:13px;font-weight:500;color:var(--text)">${displayName}</div>
+            <div style="font-size:11px;color:var(--text3)">${userProfile?.role||''} ${userProfile?.region?'&bull; '+userProfile.region:''}</div>
+          </div>
+          ${mySub ? '<span class="badge badge-amber" style="margin-left:auto">Editing existing</span>' : ''}
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text3)">Week of <strong style="color:var(--text)">${week}</strong></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="nav('home',null)"><i class="ti ti-arrow-left"></i> Back</button>
+        <button class="btn btn-primary" onclick="startForm()"><i class="ti ti-arrow-right"></i> ${mySub?'Edit submission':'Start submission'}</button>
+      </div>
+    </div>`;
+  }
+
+  const section = SECTIONS[formStep];
+  return `<div style="max-width:560px">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:4px">
+      ${getUserDisplayName(userProfile)} &bull; Week of ${week}
+      ${formStep < SECTIONS.length - 1 ? '' : ''}
+    </div>
+    <div class="progress-track">
+      ${SECTIONS.map((_,i) => `<div class="pip ${i<formStep?'done':i===formStep?'active':''}"></div>`).join('')}
+    </div>
+    <div class="panel" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <i class="ti ${section.icon}" style="font-size:18px;color:var(--blue)"></i>
+        <div>
+          <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">${section.label} &bull; ${formStep+1} of ${SECTIONS.length}</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-top:2px">${section.question}</div>
+        </div>
+      </div>
+      <textarea class="form-textarea" id="section-input" placeholder="${section.placeholder}" style="min-height:120px">${formAnswers[section.id]||''}</textarea>
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:8px">
+      <button class="btn btn-ghost" onclick="formBack()"><i class="ti ti-arrow-left"></i> Back</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="formSkip()">Skip</button>
+        <button class="btn btn-primary" onclick="formNext()">${formStep===SECTIONS.length-1?'Submit <i class="ti ti-check"></i>':'Next <i class="ti ti-arrow-right"></i>'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function startForm() { formStep=0; renderView('submit'); }
+
+function saveCurrentInput() {
+  const val = document.getElementById('section-input')?.value?.trim() || '';
+  if (val) formAnswers[SECTIONS[formStep].id] = val;
+  else delete formAnswers[SECTIONS[formStep].id];
+}
+
+function formNext() {
+  saveCurrentInput();
+  if (formStep < SECTIONS.length-1) { formStep++; renderView('submit'); }
+  else submitForm();
+}
+
+function formSkip() {
+  saveCurrentInput();
+  if (formStep < SECTIONS.length-1) { formStep++; renderView('submit'); }
+  else submitForm();
+}
+
+function formBack() {
+  if (formStep === 0) { formStep=-1; renderView('submit'); return; }
+  saveCurrentInput();
+  formStep--;
+  renderView('submit');
+}
+
+async function submitForm() {
+  const week = currentWeek();
+  const displayName = getUserDisplayName(userProfile);
+  const data = {
+    submitter: displayName,
+    user_id: currentUser.id,
+    user_email: currentUser.email,
+    user_role: userProfile?.role || '',
+    user_region: userProfile?.region || '',
+    user_display_name: displayName,
+    week_date: week,
+    answers: formAnswers,
+    submitted_by: displayName,
+    created_at: new Date().toISOString()
+  };
+
+  const existing = getMySubmission(week);
+  if (existing) {
+    await dbFetch(`elt_submissions?id=eq.${existing.id}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify(data)});
+    const idx = submissions.findIndex(s => s.id === existing.id);
+    if (idx > -1) submissions[idx] = {...existing, ...data};
+    showToast('Submission updated.');
+  } else {
+    const result = await dbFetch('elt_submissions', {method:'POST', prefer:'return=representation', headers:{'Prefer':'return=representation'}, body:JSON.stringify(data)});
+    if (result) submissions.unshift(Array.isArray(result) ? result[0] : result);
+    showToast('Submission saved.');
+  }
+
+  formStep = -1; formAnswers = {};
+  // Update topbar button
+  const btnLabel = document.getElementById('btn-submit-label');
+  if (btnLabel) btnLabel.textContent = 'Edit My Submission';
+  renderView('home');
+}
+
+// ── View submission ────────────────────────────────────
+function viewSubmission(subId) {
+  const sub = submissions.find(s => s.id === subId);
+  if (!sub) return;
+  const canEdit = canEditSubmission(sub);
+  const displayName = sub.user_display_name || sub.submitter || '—';
+
+  openModal(`
+  <div class="modal-header">
+    <div>
+      <div class="modal-title">${displayName} — Week of ${sub.week_date}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px">${sub.user_role||''} ${sub.user_region?'&bull; '+sub.user_region:''}</div>
+    </div>
+    <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="modal-body">
+    ${SECTIONS.map(sec => {
+      const answer = sub.answers?.[sec.id];
+      if (!answer) return '';
+      return `<div class="answer-section">
+        <div class="answer-label"><i class="ti ${sec.icon}" style="font-size:12px"></i> ${sec.label}</div>
+        <div class="answer-text">${answer}</div>
+      </div>`;
+    }).join('')}
+  </div>
+  <div class="modal-footer">
+    ${canEdit ? `<button class="btn btn-ghost" onclick="closeModal();editSubmission('${subId}')"><i class="ti ti-edit"></i> Edit</button>` : ''}
+    <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+  </div>`);
+}
+
+function editSubmission(subId) {
+  const sub = submissions.find(s => s.id === subId);
+  if (!sub || !canEditSubmission(sub)) return;
+  formAnswers = sub.answers || {};
+  formStep = 0;
+  renderView('submit');
+  nav('submit', document.querySelector('[onclick*="submit"]'));
+}
+
+// ── Consolidated view ──────────────────────────────────
+async function viewConsolidated(week) {
+  const subs = getWeekSubs(week);
+  const files = await dbFetch(`elt_files?week_date=eq.${week}&order=uploaded_at.desc`) || [];
+
+  const sectionHtml = SECTIONS.map(sec => {
+    const entries = subs.filter(s => s.answers?.[sec.id]).map(s => `
+      <div style="margin-bottom:12px;padding:10px;background:var(--surface2);border-radius:6px">
+        <div style="font-size:10px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">
+          ${s.user_display_name||s.submitter||'—'} &bull; ${s.user_role||''} ${s.user_region?'&bull; '+s.user_region:''}
+        </div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">${s.answers[sec.id]}</div>
+      </div>`).join('');
+    if (!entries) return '';
+    return `<div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <i class="ti ${sec.icon}" style="font-size:16px;color:var(--blue)"></i>
+        <span style="font-size:13px;font-weight:600;color:var(--text)">${sec.label}</span>
+      </div>
+      ${entries}
+    </div>`;
+  }).join('');
+
+  const filesHtml = files.length > 0 ? `
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px"><i class="ti ti-paperclip" style="margin-right:4px"></i>Attached files</div>
+      ${files.map(f => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <i class="ti ti-file" style="color:var(--text3)"></i>
+        <span style="font-size:12px;color:var(--text);flex:1">${f.filename}</span>
+        <span style="font-size:10px;color:var(--text3)">${f.uploaded_by} &bull; ${new Date(f.uploaded_at).toLocaleDateString()}</span>
+        <button class="btn btn-ghost" style="font-size:10px;padding:2px 8px" onclick="downloadFile('${f.storage_path}','${f.filename}')"><i class="ti ti-download"></i></button>
+      </div>`).join('')}
+    </div>` : '';
+
+  openModal(`
+  <div class="modal-header">
+    <div>
+      <div class="modal-title">ELT Report — Week of ${week}</div>
+      <div style="margin-top:6px">
+        ${subs.map(s => `<span class="badge badge-green">${s.user_display_name||s.submitter}</span>`).join('')}
+        ${eltUsers.filter(u => !subs.find(s => s.user_id===u.id)).map(u => `<span class="badge badge-gray">${getUserDisplayName(u)}</span>`).join('')}
+      </div>
+    </div>
+    <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="modal-body">
+    ${filesHtml}
+    ${subs.length===0 ? '<div class="empty-state"><i class="ti ti-file-text"></i><div class="empty-state-title">No submissions for this week</div></div>' : sectionHtml}
+    <div style="padding:12px;background:var(--amber-bg);border:1px solid rgba(245,166,35,.2);border-radius:8px;margin-top:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--amber);margin-bottom:4px"><i class="ti ti-robot"></i> AI Synopsis</div>
+      <div style="font-size:12px;color:var(--text2)">Export to CSV and import into Claude for a generated synopsis and talking points.</div>
+      <button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="exportWeekCSV('${week}')"><i class="ti ti-download"></i> Export CSV</button>
+    </div>
+  </div>
+  <div class="modal-footer">
+    ${isSuperadmin ? `<button class="btn btn-ghost" onclick="openFileUpload('${week}')"><i class="ti ti-upload"></i> Upload file</button>` : ''}
+    <button class="btn btn-ghost" onclick="exportWeekCSV('${week}')"><i class="ti ti-download"></i> Export CSV</button>
+    <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+  </div>`, 'modal-wide');
+}
+
+// ── History ────────────────────────────────────────────
+function renderHistory() {
+  const weeks = allWeeks();
+  if (weeks.length === 0) return `<div class="empty-state"><i class="ti ti-history"></i><div class="empty-state-title">No submissions yet</div></div>`;
+  return `
+  <div class="section-header">
+    <div class="section-title">All weeks (${weeks.length})</div>
+    <button class="btn btn-ghost" onclick="exportCSV()"><i class="ti ti-download"></i> Export all CSV</button>
+  </div>
+  ${weeks.map(week => {
+    const subs = getWeekSubs(week);
+    const locked = isSubmissionLocked(week);
+    return `<div class="panel" style="margin-bottom:12px">
+      <div class="week-row">
+        <span style="font-size:14px;font-weight:600;color:var(--text)">Week of ${week}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${locked ? '<span class="badge badge-amber">Locked</span>' : ''}
+          <span style="font-size:12px;color:var(--text3)">${subs.length}/${eltUsers.length} submitted</span>
+        </div>
+      </div>
+      <div style="margin-bottom:10px">
+        ${subs.map(s => `<span class="badge badge-green" style="cursor:pointer" onclick="viewSubmission('${s.id}')">${s.user_display_name||s.submitter||'—'}</span>`).join('')}
+        ${eltUsers.filter(u => !subs.find(s => s.user_id===u.id)).map(u => `<span class="badge badge-gray">${getUserDisplayName(u)}</span>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost" style="font-size:11px" onclick="viewConsolidated('${week}')"><i class="ti ti-file-text"></i> Consolidated</button>
+        <button class="btn btn-ghost" style="font-size:11px" onclick="exportWeekCSV('${week}')"><i class="ti ti-download"></i> Export CSV</button>
+        ${isSuperadmin ? `<button class="btn btn-ghost" style="font-size:11px" onclick="openFileUpload('${week}')"><i class="ti ti-upload"></i> Upload file</button>` : ''}
+      </div>
+    </div>`;
+  }).join('')}`;
+}
+
+// ── File upload ────────────────────────────────────────
+function openFileUpload(week) {
+  if (!isSuperadmin) return;
+  openModal(`
+  <div class="modal-header">
+    <div><div class="modal-title">Upload File</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Week of ${week}</div></div>
+    <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Description (optional)</label><input class="form-input" id="uf-desc" placeholder="e.g. AI Synopsis, Meeting notes..."/></div>
+    <div class="file-drop" id="file-drop-zone" onclick="document.getElementById('uf-file').click()"
+      ondragover="event.preventDefault();this.classList.add('dragging')"
+      ondragleave="this.classList.remove('dragging')"
+      ondrop="event.preventDefault();this.classList.remove('dragging');handleFileDrop(event,'${week}')">
+      <i class="ti ti-upload" style="font-size:28px;color:var(--text3);margin-bottom:8px;display:block"></i>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:4px">Click to browse or drag and drop</div>
+      <div style="font-size:11px;color:var(--text3)">PDF, Word, Excel, images up to 10MB</div>
+      <input type="file" id="uf-file" style="display:none" onchange="handleFileSelect(event,'${week}')"/>
+    </div>
+    <div id="uf-status" style="margin-top:10px;font-size:12px;color:var(--text3)"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Close</button></div>`);
+}
+
+async function handleFileDrop(e, week) {
+  const file = e.dataTransfer.files[0];
+  if (file) await uploadFile(file, week);
+}
+
+async function handleFileSelect(e, week) {
+  const file = e.target.files[0];
+  if (file) await uploadFile(file, week);
+}
+
+async function uploadFile(file, week) {
+  const status = document.getElementById('uf-status');
+  if (file.size > 10 * 1024 * 1024) { status.textContent = 'File too large. Max 10MB.'; status.style.color='var(--red)'; return; }
+  status.textContent = 'Uploading...'; status.style.color = 'var(--text3)';
+
+  // Get real session token — required for storage operations
+  const { data: sessionData } = await sb.auth.getSession();
+  const token = sessionData?.session?.access_token || SUPABASE_ANON_KEY;
+
+  const path = `${week}/${Date.now()}-${file.name}`;
+  const formData = new FormData();
+  formData.append('', file);
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/elt-files/${path}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + token },
+      body: formData
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn('Upload error:', errText);
+      status.textContent = 'Upload failed: ' + errText; status.style.color='var(--red)'; return;
+    }
+
+    const desc = document.getElementById('uf-desc')?.value || '';
+    await dbFetch('elt_files', {method:'POST', prefer:'return=minimal', body: JSON.stringify({
+      week_date: week, filename: file.name, storage_path: path,
+      uploaded_by: getUserDisplayName(userProfile), file_size: file.size, description: desc
+    })});
+
+    status.textContent = `"${file.name}" uploaded successfully.`; status.style.color='var(--green)';
+    showToast('File uploaded.');
+  } catch(e) {
+    status.textContent = 'Upload error: ' + e.message; status.style.color='var(--red)';
+  }
+}
+
+async function downloadFile(path, filename) {
+  const { data: sessionData } = await sb.auth.getSession();
+  const token = sessionData?.session?.access_token || SUPABASE_ANON_KEY;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/elt-files/${path}`, {
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + token }
+  });
+  if (!res.ok) { showToast('Download failed.', 'error'); return; }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Team view ──────────────────────────────────────────
+async function renderELTTeam() {
+  const c = document.getElementById('content');
+  c.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3)"><i class="ti ti-loader-2 spin" style="font-size:24px"></i></div>';
+  const users = await dbFetch('profiles?order=display_name') || [];
+  const filtered = users.filter(u => u.portal_access==='elt' || u.portal_access==='both');
+  const cols = '2fr 1fr 1fr 1fr 80px';
+  c.innerHTML = `
+  <div class="section-header">
+    <div><div class="section-title">ELT Team (${filtered.length})</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Users with ELT portal access</div></div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+    <div style="display:grid;grid-template-columns:${cols};padding:9px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">User</div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Display Name</div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Role</div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Access</div>
+      <div></div>
+    </div>
+    ${filtered.map(u => `
+    <div style="display:grid;grid-template-columns:${cols};padding:11px 16px;border-bottom:1px solid var(--border);align-items:center">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--blue)">${u.initials||'??'}</div>
+        <div><div style="font-size:13px;font-weight:500;color:var(--text)">${u.name||u.email}</div><div style="font-size:10px;color:var(--text3)">${u.email}</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--text2)">${u.display_name||'<span style="color:var(--text3)">Not set</span>'}</div>
+      <div style="font-size:12px;color:var(--text2)">${u.role||'—'}</div>
+      <div><span class="badge ${u.is_admin?'badge-amber':u.can_edit?'badge-blue':'badge-gray'}">${u.is_admin?'Admin':u.can_edit?'Editor':'Viewer'}</span></div>
+      <div>${isSuperadmin?`<button class="icon-btn" onclick="openEditDisplayName('${u.id}','${u.display_name||u.name||''}')"><i class="ti ti-edit"></i></button>`:''}
+      </div>
+    </div>`).join('')}
+  </div>
+  <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:var(--radius-lg);font-size:12px;color:var(--text3)">
+    <i class="ti ti-info-circle" style="font-size:14px;vertical-align:-2px"></i>
+    Set each user's display name here. This name appears on the dashboard and in reports. Full user management is in the Portfolio tool.
+  </div>`;
+}
+
+function openEditDisplayName(uid, current) {
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Set Display Name</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Display Name</label><input class="form-input" id="dn-val" value="${current}" placeholder="e.g. Michi"/><div style="font-size:10px;color:var(--text3);margin-top:4px">This is how the user appears on the dashboard and in reports.</div></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveDisplayName('${uid}')"><i class="ti ti-check"></i> Save</button>
+  </div>`);
+}
+
+async function saveDisplayName(uid) {
+  const val = document.getElementById('dn-val').value.trim();
+  await dbFetch(`profiles?id=eq.${uid}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({display_name:val})});
+  closeModal(); showToast('Display name updated.'); renderELTTeam();
+}
+
+// ── CSV Export ─────────────────────────────────────────
+function exportWeekCSV(week) { exportToCSV(getWeekSubs(week), `gcc-elt-${week}.csv`); }
+function exportCSV() { exportToCSV(submissions, `gcc-elt-all-${currentWeek()}.csv`); }
+
+function exportToCSV(data, filename) {
+  if (data.length === 0) { showToast('No data to export.', 'error'); return; }
+  const headers = ['Week','Display Name','Full Name','Email','Role','Region',...SECTIONS.map(s=>s.label),'Submitted At'];
+  const rows = data.map(s => [
+    s.week_date||'',
+    s.user_display_name||s.submitter||'',
+    s.submitted_by||'',
+    s.user_email||'',
+    s.user_role||'',
+    s.user_region||'',
+    ...SECTIONS.map(sec => (s.answers?.[sec.id]||'').replace(/"/g,'""').replace(/\n/g,' ')),
+    s.created_at ? new Date(s.created_at).toLocaleDateString() : ''
+  ]);
+  const csv = [headers,...rows].map(row => row.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=filename; a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exported.');
+}
+
+// ── Modal & Toast ──────────────────────────────────────
+function openModal(html, extraClass='') {
+  document.getElementById('modal-inner').className = `modal ${extraClass}`;
+  document.getElementById('modal-inner').innerHTML = html;
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  const icon = type==='error' ? 'ti-alert-circle' : 'ti-circle-check';
+  const color = type==='error' ? 'var(--red)' : 'var(--green)';
+  t.innerHTML = `<i class="ti ${icon}" style="color:${color};font-size:16px"></i> ${msg}`;
+  t.style.display='flex'; clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.style.display='none', 3000);
+}
+</script>
+</body>
+</html>

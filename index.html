@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>window.GCC_PORTAL = "portfolio";</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -172,6 +173,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 </head>
 <body>
 
+<!-- PAGE LOADING -->
+<div id="page-loading" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:600;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div style="width:40px;height:40px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700">G</div>
+  <div style="color:var(--text3);font-size:13px">Loading...</div>
+</div>
+
 <!-- LOGIN -->
 <div id="login-screen" class="login-screen">
   <div class="login-card">
@@ -201,6 +208,28 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
   </div>
 </div>
 
+
+<!-- PORTAL SELECTOR -->
+<div id="portal-selector" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:24px">
+  <div style="text-align:center;margin-bottom:8px">
+    <div style="width:48px;height:48px;background:var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;margin:0 auto 12px">G</div>
+    <div style="font-size:20px;font-weight:600;color:var(--text)">GCC Operations Suite</div>
+    <div style="font-size:13px;color:var(--text3);margin-top:4px">Welcome back, <span id="ps-name"></span>. Select a portal to continue.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:520px;width:100%;padding:0 20px">
+    <div onclick="selectPortal('portfolio')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;cursor:pointer;transition:all .15s;text-align:center" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
+      <i class="ti ti-folders" style="font-size:32px;color:var(--blue);margin-bottom:12px;display:block"></i>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">Portfolio Tool</div>
+      <div style="font-size:11px;color:var(--text3)">Projects, KPIs, milestones and blockers</div>
+    </div>
+    <div onclick="selectPortal('elt')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;cursor:pointer;transition:all .15s;text-align:center" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
+      <i class="ti ti-messages" style="font-size:32px;color:var(--purple);margin-bottom:12px;display:block"></i>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">ELT Weekly Updates</div>
+      <div style="font-size:11px;color:var(--text3)">Leadership readouts and weekly submissions</div>
+    </div>
+  </div>
+  <button onclick="handleSignOut()" style="background:transparent;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:8px">Sign out</button>
+</div>
 <!-- APP -->
 <div id="app" class="app" style="display:none">
   <div class="sidebar">
@@ -225,7 +254,17 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
         <div class="nav-label">Admin</div>
         <button class="nav-item" onclick="nav('team',this)"><i class="ti ti-users"></i>Team</button>
       </div>
+      <div class="nav-section" id="suite-nav" style="display:none">
+        <div class="nav-label">GCC Suite</div>
+        <a class="nav-item" href="elt.html" style="text-decoration:none"><i class="ti ti-messages"></i>ELT Weekly Updates</a>
+      </div>
     </div>
+    <div id="portal-toggle" style="display:none;padding:10px 14px;border-top:1px solid var(--border)">
+        <div style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Switch Portal</div>
+        <button onclick="switchPortal('elt')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;background:var(--purple-bg);color:var(--purple);border:none;cursor:pointer;font-size:12px;font-weight:500;width:100%;font-family:'DM Sans',sans-serif">
+          <i class="ti ti-messages" style="font-size:15px"></i>ELT Weekly Updates
+        </button>
+      </div>
     <div class="sidebar-user">
       <div class="user-avatar" id="user-av">??</div>
       <div style="flex:1;min-width:0">
@@ -261,22 +300,12 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 <div id="toast" class="toast" style="display:none"></div>
 
 <script>
-// ═══════════════════════════════════════════════════════
-// CONFIGURATION — REPLACE THESE TWO VALUES
-// ═══════════════════════════════════════════════════════
+// Config and auth handled by auth.js
 const SUPABASE_URL = 'https://tuubqxnphoifqjbumgxa.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dWJxeG5waG9pZnFqYnVtZ3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDQ2MjAsImV4cCI6MjA5NDEyMDYyMH0.U0Tdp6GUBZMF16z00WvxmMTRKtWaJQEX954oy_w70Q0';
-// ═══════════════════════════════════════════════════════
-
-// Singleton Supabase client — prevents multiple instance warning
 if (!window._sbClient) {
   window._sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      persistSession: true,
-      storageKey: 'gcc-portfolio-auth',
-      autoRefreshToken: true,
-      detectSessionInUrl: false
-    }
+    auth: { persistSession:true, storageKey:'gcc-suite-auth', autoRefreshToken:true, detectSessionInUrl:false }
   });
 }
 const sb = window._sbClient;
@@ -317,25 +346,96 @@ async function handleLogin(){
 document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin();});
 document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
 
-async function handleSignOut(){await sb.auth.signOut();}
+async function handleSignOut(){
+  clearPortalChoice();
+  chosePortalThisSession = null;
+  await sb.auth.signOut();
+}
 
-// Show login screen immediately — no hanging session check
-document.getElementById('login-screen').style.display='flex';
+// Show loading state — reveals correct screen after auth resolves
+document.getElementById('login-screen').style.display='none';
+document.getElementById('app').style.display='none';
+document.getElementById('portal-selector').style.display='none';
+document.getElementById('page-loading').style.display='flex';
 
-// Auth state listener handles everything
+// Portal choice persists across page navigations via localStorage
+// Cleared only on sign out so toggle works seamlessly
+function getPortalChoice() { try { return localStorage.getItem('gcc-portal-choice'); } catch { return null; } }
+function setPortalChoice(p) { try { localStorage.setItem('gcc-portal-choice', p); } catch {} }
+function clearPortalChoice() { try { localStorage.removeItem('gcc-portal-choice'); } catch {} }
+
+// Fallback: show login if auth doesn't resolve in 3s
+setTimeout(()=>{
+  const loading=document.getElementById('page-loading');
+  if(loading&&loading.style.display!=='none'){
+    loading.style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+  }
+},3000);
+
 sb.auth.onAuthStateChange(async(event, session) => {
-  console.log('Auth event:', event);
-  if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+  if (session?.user && (event==='SIGNED_IN'||event==='INITIAL_SESSION')) {
+    const appVisible = document.getElementById('app').style.display==='flex';
+    const selectorVisible = document.getElementById('portal-selector').style.display==='flex';
+    if (appVisible || selectorVisible) return;
     currentUser = session.user;
     await loadProfile();
+    if (!hasPortalAccess('portfolio')) {
+      setPortalChoice('elt');
+      window.location.href = 'elt.html';
+      return;
+    }
     await loadData();
-    try { showApp(); } catch(e) { console.error('showApp error:', e); }
-  } else if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
-    currentUser = null; userProfile = null; canEdit = false; projects = [];
+    const choice = getPortalChoice();
+    if (userProfile?.portal_access === 'both') {
+      if (choice === 'portfolio') { showApp(); }
+      else if (choice === 'elt') { window.location.href = 'elt.html'; }
+      else if (event === 'SIGNED_IN') { showPortalSelector(); }
+      else { showApp(); }
+    } else {
+      setPortalChoice('portfolio');
+      showApp();
+    }
+  } else if (event==='SIGNED_OUT'||(event==='INITIAL_SESSION'&&!session)) {
+    clearPortalChoice();
+    currentUser=null; userProfile=null; canEdit=false; projects=[];
+    document.getElementById('portal-selector').style.display='none';
     document.getElementById('app').style.display='none';
+    document.getElementById('page-loading').style.display='none';
     document.getElementById('login-screen').style.display='flex';
   }
 });
+
+function hasPortalAccess(portal) {
+  if (!userProfile) return false;
+  const access = userProfile.portal_access || 'portfolio';
+  return access === 'both' || access === portal;
+}
+
+function isSuperAdmin() {
+  return userProfile?.is_admin && userProfile?.portal_access === 'both';
+}
+
+function showPortalSelector() {
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='none';
+  document.getElementById('page-loading').style.display='none';
+  document.getElementById('portal-selector').style.display='flex';
+  document.getElementById('ps-name').textContent = userProfile?.name || currentUser.email;
+}
+
+function selectPortal(portal) {
+  document.getElementById('portal-selector').style.display='none';
+  setPortalChoice(portal);
+  if (portal === 'portfolio') showApp();
+  else window.location.href = 'elt.html';
+}
+
+function switchPortal(portal) {
+  setPortalChoice(portal);
+  if (portal === 'portfolio') showApp();
+  else window.location.href = 'elt.html';
+}
 
 async function dbFetch(path, options={}) {
   // Use anon key directly - RLS disabled, no session lookup needed
@@ -366,12 +466,18 @@ async function loadProfile(){
     if(data && data.length > 0){
       userProfile=data[0]; canEdit=userProfile.can_edit||userProfile.is_admin;
     } else {
-      const name=currentUser.email.split('@')[0];
-      const profile={id:currentUser.id,email:currentUser.email,name,role:'GCC Team',initials:name.slice(0,2).toUpperCase(),can_edit:false,is_admin:false};
-      await dbFetch('profiles', {method:'POST', prefer:'return=minimal', body:JSON.stringify(profile)});
-      userProfile=profile; canEdit=false;
+      // Check by email to prevent duplicates
+      const byEmail=await dbFetch('profiles?email=eq.'+encodeURIComponent(currentUser.email)+'&limit=1');
+      if(byEmail&&byEmail.length>0){
+        userProfile=byEmail[0]; canEdit=userProfile.can_edit||userProfile.is_admin;
+      } else {
+        const name=currentUser.email.split('@')[0];
+        const profile={id:currentUser.id,email:currentUser.email,name,role:'GCC Team',initials:name.slice(0,2).toUpperCase(),can_edit:false,is_admin:false,portal_access:'portfolio',must_change_password:false};
+        await dbFetch('profiles', {method:'POST', prefer:'return=minimal', body:JSON.stringify(profile)});
+        userProfile=profile; canEdit=false;
+      }
     }
-  } catch(e) { console.warn('loadProfile error:', e); userProfile={name:currentUser.email,role:'GCC',initials:'??',can_edit:false,is_admin:false}; canEdit=false; }
+  } catch(e) { console.warn('loadProfile error:', e); userProfile={name:currentUser.email,role:'GCC',initials:'??',can_edit:false,is_admin:false,portal_access:'portfolio'}; canEdit=false; }
 }
 
 async function loadData(){
@@ -387,18 +493,23 @@ async function loadData(){
 
 function showApp(){
   document.getElementById('login-screen').style.display='none';
+  document.getElementById('portal-selector').style.display='none';
+  document.getElementById('page-loading').style.display='none';
   document.getElementById('app').style.display='flex';
   document.getElementById('user-av').textContent=userProfile?.initials||'??';
   document.getElementById('user-name').textContent=userProfile?.name||currentUser.email;
   document.getElementById('user-role').textContent=userProfile?.role||'GCC';
   if(userProfile?.is_admin) document.getElementById('admin-nav').style.display='block';
+  if(userProfile?.portal_access==='both') {
+    document.getElementById('suite-nav').style.display='block';
+    document.getElementById('portal-toggle').style.display='block';
+  }
   if(canEdit){
     document.getElementById('btn-np').style.display='inline-flex';
     document.getElementById('btn-nt').style.display='inline-flex';
   }
   updateBadges();
-  // Prompt password change on first login
-  if(userProfile?.must_change_password) { renderView('dashboard'); promptPasswordChange(); }
+  if(userProfile?.must_change_password){renderView('dashboard');promptPasswordChange();}
   else renderView('dashboard');
 }
 
@@ -667,21 +778,22 @@ async function renderBlockers(){
 async function renderTeam(){
   if(!userProfile?.is_admin) return`<div class="empty-state"><i class="ti ti-lock"></i><div class="empty-state-title">Admin access required</div></div>`;
   const users=await dbFetch('profiles?order=email');
-  const cols='2fr 1fr 1fr 1fr 80px';
+  const cols='2fr 1fr 1fr 1fr 1fr 80px';
   return`
   <div class="section-header">
     <div><div class="section-title">Team Members (${(users||[]).length})</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Manage user access and permissions</div></div>
     <button class="btn btn-primary" onclick="openInviteUser()"><i class="ti ti-user-plus"></i> Add User</button>
   </div>
   <div class="data-table">
-    <div class="table-head" style="grid-template-columns:${cols}"><div class="th">User</div><div class="th">Role</div><div class="th">Region</div><div class="th">Access</div><div class="th"></div></div>
+    <div class="table-head" style="grid-template-columns:${cols}"><div class="th">User</div><div class="th">Role</div><div class="th">Region</div><div class="th">Portal</div><div class="th">Access</div><div class="th"></div></div>
     ${(users||[]).map(u=>`<div class="table-row" style="grid-template-columns:${cols};cursor:default">
       <div style="display:flex;align-items:center;gap:10px"><div class="owner-av" style="width:30px;height:30px;font-size:10px">${u.initials||'??'}</div><div><div class="row-primary">${u.name||u.email}</div><div class="row-secondary">${u.email}</div></div></div>
       <div style="font-size:12px;color:var(--text2)">${u.role||'GCC'}</div>
       <div style="font-size:12px;color:var(--text2)">${u.region||'—'}</div>
-      <div><span class="badge ${u.is_admin?'badge-red':u.can_edit?'badge-blue':'badge-gray'}">${u.is_admin?'Admin':u.can_edit?'Editor':'Viewer'}</span></div>
+      <div><span class="badge badge-gray">${u.portal_access==='both'?'Both':u.portal_access==='elt'?'ELT':'Portfolio'}</span></div>
+      <div><span class="badge ${u.is_admin&&u.portal_access==='both'?'badge-red':u.is_admin?'badge-amber':u.can_edit?'badge-blue':'badge-gray'}">${u.is_admin&&u.portal_access==='both'?'Superadmin':u.is_admin?'Admin':u.can_edit?'Editor':'Viewer'}</span></div>
       <div style="display:flex;gap:4px">
-        <button class="icon-btn" onclick="openEditUser('${u.id}',${u.can_edit},${u.is_admin},'${u.name||''}','${u.role||''}','${u.region||''}')"><i class="ti ti-edit"></i></button>
+        <button class="icon-btn" onclick="openEditUser('${u.id}',${u.can_edit},${u.is_admin},'${u.name||''}','${u.role||''}','${u.region||''}','${u.portal_access||'portfolio'}')"><i class="ti ti-edit"></i></button>
         ${u.id !== '${currentUser?.id}'?`<button class="icon-btn" onclick="deleteUser('${u.id}','${u.name||u.email}')" style="color:var(--red)"><i class="ti ti-trash"></i></button>`:''}
       </div>
     </div>`).join('')}
@@ -939,7 +1051,7 @@ async function saveKPI(kpiId){
   kpiValues[kpiId]=val; closeModal(); showToast('KPI updated.'); renderView('kpis');
 }
 
-function openEditUser(uid,canEditCurrent,isAdminCurrent,name='',role='',region=''){
+function openEditUser(uid,canEditCurrent,isAdminCurrent,name='',role='',region='',portalAccess='portfolio'){
   openModal(`
   <div class="modal-header"><div><div class="modal-title">Edit User</div><div class="modal-subtitle">${name||'User'}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
@@ -949,7 +1061,15 @@ function openEditUser(uid,canEditCurrent,isAdminCurrent,name='',role='',region='
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Region</label><select class="form-select" id="eu-region"><option value="">— Select —</option><option ${region==='Global'?'selected':''}>Global</option><option ${region==='US'?'selected':''}>US</option><option ${region==='EMEA'?'selected':''}>EMEA</option><option ${region==='APAC'?'selected':''}>APAC</option><option ${region==='LATAM'?'selected':''}>LATAM</option></select></div>
-      <div class="form-group"><label class="form-label">Access Level</label><select class="form-select" id="eu-access"><option value="viewer" ${!canEditCurrent&&!isAdminCurrent?'selected':''}>Viewer — read only</option><option value="editor" ${canEditCurrent&&!isAdminCurrent?'selected':''}>Editor — can create and edit</option><option value="admin" ${isAdminCurrent?'selected':''}>Admin — full access</option></select></div>
+      <div class="form-group"><label class="form-label">Portal Access</label><select class="form-select" id="eu-portal"><option value="portfolio" ${portalAccess==='portfolio'?'selected':''}>Portfolio only</option><option value="elt" ${portalAccess==='elt'?'selected':''}>ELT only</option><option value="both" ${portalAccess==='both'?'selected':''}>Both portals</option></select></div>
+    </div>
+    <div class="form-group"><label class="form-label">Access Level</label><select class="form-select" id="eu-access">
+      <option value="viewer" ${!canEditCurrent&&!isAdminCurrent?'selected':''}>Viewer — read only</option>
+      <option value="editor" ${canEditCurrent&&!isAdminCurrent?'selected':''}>Editor — can create and edit</option>
+      <option value="portal_admin" ${isAdminCurrent&&portalAccess!=='both'?'selected':''}>Portal Admin — admin of assigned portal(s)</option>
+      <option value="superadmin" ${isAdminCurrent&&portalAccess==='both'?'selected':''}>Superadmin — full access to all portals</option>
+    </select>
+    <div style="font-size:10px;color:var(--text3);margin-top:4px">Superadmin requires Both portals access.</div>
     </div>
   </div>
   <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveUserAccess('${uid}')"><i class="ti ti-check"></i> Save</button></div>`);
@@ -1023,7 +1143,14 @@ async function saveUserAccess(uid){
   const role=document.getElementById('eu-role')?.value||'';
   const region=document.getElementById('eu-region')?.value||'';
   const level=document.getElementById('eu-access').value;
-  const updates={can_edit:level==='editor'||level==='admin',is_admin:level==='admin'};
+  const portal=document.getElementById('eu-portal')?.value||'portfolio';
+  const isSA=level==='superadmin';
+  const isPA=level==='portal_admin';
+  const updates={
+    can_edit:level==='editor'||isPA||isSA,
+    is_admin:isPA||isSA,
+    portal_access:isSA?'both':portal
+  };
   if(name) updates.name=name;
   if(role) updates.role=role;
   if(region) updates.region=region;
