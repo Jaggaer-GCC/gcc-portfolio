@@ -785,6 +785,7 @@ async function viewConsolidated(week) {
         <span style="font-size:12px;color:var(--text);flex:1">${f.filename}</span>
         <span style="font-size:10px;color:var(--text3)">${f.uploaded_by} &bull; ${new Date(f.uploaded_at).toLocaleDateString()}</span>
         <button class="btn btn-ghost" style="font-size:10px;padding:2px 8px" onclick="downloadFile('${f.storage_path}','${f.filename}')"><i class="ti ti-download"></i></button>
+        ${isSuperadmin ? '<button class="btn btn-ghost" style="font-size:10px;padding:2px 8px;color:var(--red);border-color:rgba(239,83,80,.3)" onclick="deleteFile(\'' + f.id + '\',\'' + f.storage_path + '\',\'' + week + '\')"><i class="ti ti-trash"></i></button>' : ''}
       </div>`).join('')}
     </div>` : '';
 
@@ -887,52 +888,77 @@ async function uploadFile(file, week) {
   if (file.size > 10 * 1024 * 1024) { status.textContent = 'File too large. Max 10MB.'; status.style.color='var(--red)'; return; }
   status.textContent = 'Uploading...'; status.style.color = 'var(--text3)';
 
-  // Get real session token — required for storage operations
-  const { data: sessionData } = await sb.auth.getSession();
-  const token = sessionData?.session?.access_token || SUPABASE_ANON_KEY;
-
-  const path = `${week}/${Date.now()}-${file.name}`;
-  const formData = new FormData();
-  formData.append('', file);
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'-');
+  const path = week + '/' + Date.now() + '-' + safeName;
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/elt-files/${path}`, {
+    const res = await fetch(SUPABASE_URL + '/storage/v1/object/elt-files/' + path, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + token },
-      body: formData
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        'x-upsert': 'false'
+      },
+      body: file
     });
 
     if (!res.ok) {
       const errText = await res.text();
       console.warn('Upload error:', errText);
-      status.textContent = 'Upload failed: ' + errText; status.style.color='var(--red)'; return;
+      status.textContent = 'Upload failed: ' + errText;
+      status.style.color='var(--red)'; return;
     }
 
     const desc = document.getElementById('uf-desc')?.value || '';
-    await dbFetch('elt_files', {method:'POST', prefer:'return=minimal', body: JSON.stringify({
+    const fileRecord = {
       week_date: week, filename: file.name, storage_path: path,
       uploaded_by: getUserDisplayName(userProfile), file_size: file.size, description: desc
-    })});
+    };
+    const saved = await dbFetch('elt_files', {
+      method:'POST', prefer:'return=representation',
+      headers:{'Prefer':'return=representation'},
+      body: JSON.stringify(fileRecord)
+    });
 
-    status.textContent = `"${file.name}" uploaded successfully.`; status.style.color='var(--green)';
+    if (!weekFiles[week]) weekFiles[week] = [];
+    const newFile = saved && Array.isArray(saved) ? saved[0] : {...fileRecord, id: Date.now().toString(), uploaded_at: new Date().toISOString()};
+    weekFiles[week].push(newFile);
+
+    status.textContent = '"' + file.name + '" uploaded successfully.';
+    status.style.color='var(--green)';
     showToast('File uploaded.');
   } catch(e) {
-    status.textContent = 'Upload error: ' + e.message; status.style.color='var(--red)';
+    status.textContent = 'Upload error: ' + e.message;
+    status.style.color='var(--red)';
   }
 }
 
-async function downloadFile(path, filename) {
-  const { data: sessionData } = await sb.auth.getSession();
-  const token = sessionData?.session?.access_token || SUPABASE_ANON_KEY;
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/elt-files/${path}`, {
-    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + token }
+async function deleteFile(fileId, path, week) {
+  if (!isSuperadmin) return;
+  if (!confirm('Delete this file? This cannot be undone.')) return;
+  // Delete from storage
+  await fetch(SUPABASE_URL + '/storage/v1/object/elt-files/' + path, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
   });
-  if (!res.ok) { showToast('Download failed.', 'error'); return; }
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
+  // Delete from database
+  await dbFetch(`elt_files?id=eq.${fileId}`, {method:'DELETE'});
+  // Update local weekFiles cache
+  if (weekFiles[week]) weekFiles[week] = weekFiles[week].filter(f => f.id !== fileId);
+  showToast('File deleted.');
+  closeModal();
+  // Refresh dashboard
+  renderView(currentView);
+}
+
+async function downloadFile(path, filename) {
+  try {
+    // Public bucket — direct URL download
+    const url = SUPABASE_URL + '/storage/v1/object/public/elt-files/' + path;
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    a.target = '_blank'; a.click();
+  } catch(e) { showToast('Download error: ' + e.message, 'error'); }
 }
 
 // ── Team view ──────────────────────────────────────────
