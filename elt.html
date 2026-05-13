@@ -459,7 +459,12 @@ async function loadData() {
       dbFetch('elt_files?order=uploaded_at.desc')
     ]);
     submissions = subs || [];
-    eltUsers = (users || []).filter(u => u.portal_access === 'elt' || u.portal_access === 'both');
+    // Exclude specific admin accounts that manage the tool but don't submit
+    const ELT_EXCLUDED = ['jarmour@jaggaer.com'];
+    eltUsers = (users || []).filter(u =>
+      (u.portal_access === 'elt' || u.portal_access === 'both') &&
+      !ELT_EXCLUDED.includes(u.email)
+    );
     // Build weekFiles lookup: { week_date: [file, ...] }
     weekFiles = {};
     (files || []).forEach(f => {
