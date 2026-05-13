@@ -846,7 +846,7 @@ async function renderTeam(){
       <div><span class="badge badge-gray">${u.portal_access==='both'?'Both':u.portal_access==='elt'?'ELT':'Portfolio'}</span></div>
       <div><span class="badge ${u.is_admin&&u.portal_access==='both'?'badge-red':u.is_admin?'badge-amber':u.can_edit?'badge-blue':'badge-gray'}">${u.is_admin&&u.portal_access==='both'?'Superadmin':u.is_admin?'Admin':u.can_edit?'Editor':'Viewer'}</span></div>
       <div style="display:flex;gap:4px">
-        <button class="icon-btn" onclick="openEditUser('${u.id}',${u.can_edit},${u.is_admin},'${u.name||''}','${u.role||''}','${u.region||''}','${u.portal_access||'portfolio'}')"><i class="ti ti-edit"></i></button>
+        <button class="icon-btn" onclick="openEditUser('${u.id}',${u.can_edit},${u.is_admin},'${u.name||''}','${u.role||''}','${u.region||''}','${u.portal_access||'portfolio'}','${u.department||''}')"><i class="ti ti-edit"></i></button>
         ${u.id !== '${currentUser?.id}'?`<button class="icon-btn" onclick="deleteUser('${u.id}','${u.name||u.email}')" style="color:var(--red)"><i class="ti ti-trash"></i></button>`:''}
       </div>
     </div>`).join('')}
@@ -1104,28 +1104,31 @@ async function saveKPI(kpiId){
   kpiValues[kpiId]=val; closeModal(); showToast('KPI updated.'); renderView('kpis');
 }
 
-function openEditUser(uid,canEditCurrent,isAdminCurrent,name='',role='',region='',portalAccess='portfolio'){
+function openEditUser(uid,canEditCurrent,isAdminCurrent,name='',role='',region='',portalAccess='portfolio',dept=''){
   openModal(`
   <div class="modal-header"><div><div class="modal-title">Edit User</div><div class="modal-subtitle">${name||'User'}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
     <div class="form-row">
       <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="eu-name" value="${name}"/></div>
-      <div class="form-group"><label class="form-label">Role</label><input class="form-input" id="eu-role" value="${role}"/></div>
+      <div class="form-group"><label class="form-label">Role / Title</label><input class="form-input" id="eu-role" value="${role}"/></div>
     </div>
     <div class="form-row">
+      <div class="form-group"><label class="form-label">Department</label><select class="form-select" id="eu-dept"><option value="">— Select —</option><option value="GCC">GCC</option><option value="CSM">CSM</option><option value="PS">PS</option><option value="CS Ops">CS Ops</option><option value="GCC Ops">GCC Ops</option><option value="GPT">GPT</option><option value="Pre-Sales">Pre-Sales</option><option value="Sales">Sales</option><option value="Marketing">Marketing</option><option value="Account Manager">Account Manager</option><option value="Partner Support">Partner Support</option></select></div>
       <div class="form-group"><label class="form-label">Region</label><select class="form-select" id="eu-region"><option value="">— Select —</option><option ${region==='Global'?'selected':''}>Global</option><option ${region==='US'?'selected':''}>US</option><option ${region==='EMEA'?'selected':''}>EMEA</option><option ${region==='APAC'?'selected':''}>APAC</option><option ${region==='LATAM'?'selected':''}>LATAM</option></select></div>
-      <div class="form-group"><label class="form-label">Portal Access</label><select class="form-select" id="eu-portal"><option value="portfolio" ${portalAccess==='portfolio'?'selected':''}>Portfolio only</option><option value="elt" ${portalAccess==='elt'?'selected':''}>ELT only</option><option value="both" ${portalAccess==='both'?'selected':''}>Both portals</option></select></div>
     </div>
-    <div class="form-group"><label class="form-label">Access Level</label><select class="form-select" id="eu-access">
-      <option value="viewer" ${!canEditCurrent&&!isAdminCurrent?'selected':''}>Viewer — read only</option>
-      <option value="editor" ${canEditCurrent&&!isAdminCurrent?'selected':''}>Editor — can create and edit</option>
-      <option value="portal_admin" ${isAdminCurrent&&portalAccess!=='both'?'selected':''}>Portal Admin — admin of assigned portal(s)</option>
-      <option value="superadmin" ${isAdminCurrent&&portalAccess==='both'?'selected':''}>Superadmin — full access to all portals</option>
-    </select>
-    <div style="font-size:10px;color:var(--text3);margin-top:4px">Superadmin requires Both portals access.</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Portal Access</label><select class="form-select" id="eu-portal"><option value="portfolio" ${portalAccess==='portfolio'?'selected':''}>Portfolio only</option><option value="elt" ${portalAccess==='elt'?'selected':''}>ELT only</option><option value="both" ${portalAccess==='both'?'selected':''}>Both portals</option></select></div>
+      <div class="form-group"><label class="form-label">Access Level</label><select class="form-select" id="eu-access">
+        <option value="viewer" ${!canEditCurrent&&!isAdminCurrent?'selected':''}>Viewer</option>
+        <option value="editor" ${canEditCurrent&&!isAdminCurrent?'selected':''}>Editor</option>
+        <option value="portal_admin" ${isAdminCurrent&&portalAccess!=='both'?'selected':''}>Portal Admin</option>
+        <option value="superadmin" ${isAdminCurrent&&portalAccess==='both'?'selected':''}>Superadmin</option>
+      </select></div>
     </div>
   </div>
   <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveUserAccess('${uid}')"><i class="ti ti-check"></i> Save</button></div>`);
+  // Set department after modal renders
+  setTimeout(()=>{ const s=document.getElementById('eu-dept'); if(s&&dept) s.value=dept; },50);
 }
 
 function openInviteUser(){
@@ -1142,11 +1145,15 @@ function openInviteUser(){
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Temporary Password *</label><input class="form-input" id="iu-pass" type="text" placeholder="Min 8 characters"/></div>
-      <div class="form-group"><label class="form-label">Role</label><input class="form-input" id="iu-role" placeholder="e.g. Regional Manager, EMEA"/></div>
+      <div class="form-group"><label class="form-label">Role / Title</label><input class="form-input" id="iu-role" placeholder="e.g. Regional Manager"/></div>
     </div>
     <div class="form-row">
+      <div class="form-group"><label class="form-label">Department</label><select class="form-select" id="iu-dept"><option value="">— Select —</option><option value="GCC">GCC</option><option value="CSM">CSM</option><option value="PS">PS</option><option value="CS Ops">CS Ops</option><option value="GCC Ops">GCC Ops</option><option value="GPT">GPT</option><option value="Pre-Sales">Pre-Sales</option><option value="Sales">Sales</option><option value="Marketing">Marketing</option><option value="Account Manager">Account Manager</option><option value="Partner Support">Partner Support</option></select></div>
       <div class="form-group"><label class="form-label">Region</label><select class="form-select" id="iu-region"><option value="">— Select —</option><option>Global</option><option>US</option><option>EMEA</option><option>APAC</option><option>LATAM</option></select></div>
-      <div class="form-group"><label class="form-label">Access Level</label><select class="form-select" id="iu-access"><option value="viewer">Viewer — read only</option><option value="editor">Editor — can create and edit</option><option value="admin">Admin — full access</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Portal Access</label><select class="form-select" id="iu-portal"><option value="portfolio">Portfolio only</option><option value="elt">ELT only</option><option value="both">Both portals</option></select></div>
+      <div class="form-group"><label class="form-label">Access Level</label><select class="form-select" id="iu-access"><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="portal_admin">Portal Admin</option><option value="superadmin">Superadmin</option></select></div>
     </div>
     <div id="iu-error" style="display:none;background:var(--red-bg);border:1px solid rgba(239,83,80,.3);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--red);margin-top:4px"></div>
   </div>
@@ -1170,6 +1177,9 @@ async function saveInviteUser(){
   if(pass.length<8){errEl.textContent='Password must be at least 8 characters.';errEl.style.display='block';return;}
   btn.disabled=true; btn.textContent='Creating...';
   // Use Supabase Auth Admin API via service role — falls back to signup if not available
+  const portal=document.getElementById('iu-portal')?.value||'portfolio';
+  const dept=document.getElementById('iu-dept')?.value||'';
+  const isSA=level==='superadmin'; const isPA=level==='portal_admin';
   const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name,role}}});
   if(error){
     errEl.textContent='Error: '+error.message;
@@ -1177,13 +1187,16 @@ async function saveInviteUser(){
     btn.disabled=false; btn.innerHTML='<i class="ti ti-user-plus"></i> Create Account';
     return;
   }
-  // Create profile
   const uid=data?.user?.id;
   if(uid){
     const initials=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
     await dbFetch('profiles', {
       method:'POST', prefer:'return=minimal',
-      body:JSON.stringify({id:uid,email,name,role,region,initials,can_edit:level==='editor'||level==='admin',is_admin:level==='admin',must_change_password:true})
+      body:JSON.stringify({id:uid,email,name,role,region,department:dept,initials,
+        portal_access:isSA?'both':portal,
+        can_edit:level==='editor'||isPA||isSA,
+        is_admin:isPA||isSA,
+        must_change_password:true})
     });
   }
   closeModal();
@@ -1195,6 +1208,7 @@ async function saveUserAccess(uid){
   const name=document.getElementById('eu-name')?.value||'';
   const role=document.getElementById('eu-role')?.value||'';
   const region=document.getElementById('eu-region')?.value||'';
+  const dept=document.getElementById('eu-dept')?.value||'';
   const level=document.getElementById('eu-access').value;
   const portal=document.getElementById('eu-portal')?.value||'portfolio';
   const isSA=level==='superadmin';
@@ -1207,7 +1221,8 @@ async function saveUserAccess(uid){
   if(name) updates.name=name;
   if(role) updates.role=role;
   if(region) updates.region=region;
-  await dbFetch(`profiles?id=eq.${uid}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify(updates)});
+  if(dept) updates.department=dept;
+  await dbFetch('profiles?id=eq.'+uid, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify(updates)});
   closeModal(); showToast('User updated.'); renderView('team');
 }
 
