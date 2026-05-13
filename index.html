@@ -568,13 +568,20 @@ function showApp(){
 
 function promptPasswordChange(){
   openModal(`
-  <div class="modal-header"><div><div class="modal-title">Set Your Password</div><div class="modal-subtitle">Your account was created by an admin. Please set your own password to continue.</div></div></div>
+  <div class="modal-header"><div><div class="modal-title">Set Your Password</div><div class="modal-subtitle">Welcome to PULSE. Your account was created by an admin — please set your own password to continue.</div></div></div>
   <div class="modal-body">
     <div class="form-group"><label class="form-label">New Password *</label><input class="form-input" id="cp-pass" type="password" placeholder="Min 8 characters"/></div>
     <div class="form-group"><label class="form-label">Confirm Password *</label><input class="form-input" id="cp-confirm" type="password" placeholder="Repeat password"/></div>
-    <div id="cp-error" style="display:none;color:var(--red);font-size:12px;margin-top:4px"></div>
+    <div id="cp-error" style="display:none;background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:8px 12px;font-size:12px;color:#B91C1C;margin-top:8px"></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-primary" onclick="saveNewPassword()"><i class="ti ti-check"></i> Set Password</button></div>`);
+  <div class="modal-footer"><button class="btn btn-primary" id="cp-save-btn"><i class="ti ti-check"></i> Set Password</button></div>`);
+  // Use addEventListener to avoid inline onclick scope issues
+  setTimeout(()=>{
+    const btn = document.getElementById('cp-save-btn');
+    if(btn) btn.addEventListener('click', saveNewPassword);
+    // Prevent dismissing modal until password is set
+    document.getElementById('modal-overlay').onclick = null;
+  }, 50);
 }
 
 async function saveNewPassword(){
@@ -584,11 +591,21 @@ async function saveNewPassword(){
   errEl.style.display='none';
   if(pass.length<8){errEl.textContent='Password must be at least 8 characters.';errEl.style.display='block';return;}
   if(pass!==confirm){errEl.textContent='Passwords do not match.';errEl.style.display='block';return;}
+  const btn=document.getElementById('cp-save-btn');
+  if(btn){btn.disabled=true;btn.textContent='Saving...';}
   const {error}=await sb.auth.updateUser({password:pass});
-  if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';return;}
-  await dbFetch(`profiles?id=eq.${currentUser.id}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({must_change_password:false})});
+  if(error){
+    errEl.textContent='Error: '+error.message;
+    errEl.style.display='block';
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Set Password';}
+    return;
+  }
+  await dbFetch('profiles?id=eq.'+currentUser.id, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({must_change_password:false})});
   if(userProfile) userProfile.must_change_password=false;
-  closeModal(); showToast('Password updated successfully.');
+  // Restore modal overlay click behaviour
+  document.getElementById('modal-overlay').onclick = function(e){ if(e.target===this) closeModal(); };
+  closeModal();
+  showToast('Password updated. Welcome to PULSE.');
 }
 
 // ── Nav ───────────────────────────────────────────────
