@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>GCC ELT Weekly Update</title>
+<title>CS ELT Weekly Update</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
@@ -12,61 +12,73 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0f1117;--surface:#171b26;--surface2:#1e2333;--surface3:#252a3d;
-  --border:#2a3050;--border2:#3a4060;
-  --text:#e8eaf0;--text2:#8892b0;--text3:#556080;
-  --blue:#4f8ef7;--blue-bg:#1a2540;--blue-dim:#2a3f6f;
-  --green:#3ecf8e;--green-bg:#0f2920;
-  --amber:#f5a623;--amber-bg:#2a1f0a;
-  --red:#ef5350;--red-bg:#2a1010;
-  --purple:#9b72f7;--purple-bg:#1e1535;
+  /* Content area — light theme */
+  --bg:#F4F5F7;
+  --surface:#FFFFFF;--surface2:#F9FAFB;--surface3:#F3F4F6;
+  --border:#E5E7EB;--border2:#D1D5DB;
+  /* Text — dark on light bg */
+  --text:#111827;--text2:#4B5563;--text3:#6B7280;
+  /* Semantic aliases */
+  --content-bg:#F4F5F7;--card-bg:#FFFFFF;--card-border:#E5E7EB;
+  --content-text:#111827;--content-text2:#6B7280;--content-text3:#9CA3AF;
+  /* Sidebar — kept dark via direct hex in sidebar CSS */
+  --sidebar-bg:#1E1E2E;--sidebar-border:#3A3A50;
+  --sidebar-text:#E8EAF0;--sidebar-text2:#9CA3AF;--sidebar-text3:#6B7280;
+  /* PULSE red */
+  --blue:#C8161D;--blue-bg:rgba(200,22,29,0.08);--blue-dim:rgba(200,22,29,0.15);
+  /* Semantic */
+  --green:#059669;--green-bg:#ECFDF5;
+  --amber:#D97706;--amber-bg:#FFFBEB;
+  --red:#C8161D;--red-bg:#FEF2F2;
+  --purple:#7C3AED;--purple-bg:#F5F3FF;
+  --teal:#0891B2;--teal-bg:#ECFEFF;
   --radius:8px;--radius-lg:12px;
 }
-html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--content-bg);color:var(--content-text);font-size:14px}
 .app{display:flex;min-height:100vh}
-.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
-.sidebar-logo{padding:18px 18px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sidebar{width:220px;min-height:100vh;background:#1E1E2E;border-right:1px solid #3A3A50;display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:18px 18px 14px;border-bottom:1px solid #3A3A50;display:flex;align-items:center;gap:10px}
 .logo-icon{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
-.logo-text{font-size:13px;font-weight:600;color:var(--text)}
+.logo-text{font-size:13px;font-weight:600;color:#E8EAF0}
 .logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
 .sidebar-nav{padding:12px 8px;flex:1}
 .nav-section{margin-bottom:20px}
-.nav-label{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:0 10px;margin-bottom:4px}
-.nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;color:var(--text2);font-size:13px;transition:all .12s;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif;text-decoration:none}
-.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-label{font-size:9px;font-weight:600;color:#556080;text-transform:uppercase;letter-spacing:1px;padding:0 10px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;color:#9CA3AF;font-size:13px;transition:all .12s;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif;text-decoration:none}
+.nav-item:hover{background:#252535;color:#E8EAF0}
 .nav-item.active{background:var(--blue-bg);color:var(--blue)}
 .nav-item i{font-size:16px;width:18px;flex-shrink:0}
-.sidebar-user{padding:12px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--blue);flex-shrink:0}
-.user-name{font-size:12px;font-weight:500;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.user-role{font-size:10px;color:var(--text3)}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.topbar{padding:13px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);flex-shrink:0}
-.topbar-title{font-size:16px;font-weight:600;color:var(--text)}
+.sidebar-user{padding:12px 14px;border-top:1px solid #3A3A50;display:flex;align-items:center;gap:10px}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:rgba(200,22,29,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#E8534A;flex-shrink:0}
+.user-name{font-size:12px;font-weight:500;color:#E8EAF0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:10px;color:#6B7280}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--content-bg)}
+.topbar{padding:13px 24px;border-bottom:1px solid var(--card-border);display:flex;align-items:center;justify-content:space-between;background:var(--card-bg);flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:600;color:var(--content-text)}
 .topbar-sub{font-size:11px;color:var(--text3);margin-top:1px}
 .topbar-actions{display:flex;align-items:center;gap:8px}
-.content{flex:1;padding:24px;overflow-y:auto}
+.content{flex:1;padding:24px;overflow-y:auto;background:var(--content-bg)}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .12s;font-family:'DM Sans',sans-serif;white-space:nowrap}
 .btn i{font-size:14px}
-.btn-primary{background:var(--blue);color:#fff}
-.btn-primary:hover{background:#3d7de0}
+.btn-primary{background:#C8161D;color:#fff}
+.btn-primary:hover{background:#A8121A}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed}
-.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
-.btn-ghost:hover{background:var(--surface2);color:var(--text)}
-.icon-btn{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:var(--text3);transition:all .12s}
-.icon-btn:hover{background:var(--surface3);color:var(--text)}
+.btn-ghost{background:transparent;color:var(--content-text2);border:1px solid #D1D5DB}
+.btn-ghost:hover{background:#F3F4F6;color:var(--content-text)}
+.icon-btn{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:#6B7280;transition:all .12s}
+.icon-btn:hover{background:#F3F4F6;color:#111827}
 .icon-btn i{font-size:15px}
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px}
-.panel-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px}
+.panel{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-lg);padding:18px}
+.panel-title{font-size:13px;font-weight:600;color:var(--content-text);margin-bottom:14px}
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px}
-.stat-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.stat-value{font-size:28px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace;line-height:1;margin-bottom:4px}
+.stat-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-lg);padding:16px 18px}
+.stat-label{font-size:10px;color:var(--content-text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-value{font-size:28px;font-weight:600;color:var(--content-text);font-family:'DM Mono',monospace;line-height:1;margin-bottom:4px}
 .stat-meta{font-size:11px;color:var(--text3)}
 .form-group{margin-bottom:16px}
 .form-label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block}
-.form-input,.form-select,.form-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border .12s}
-.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--blue)}
+.form-input,.form-select,.form-textarea{width:100%;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:6px;padding:8px 10px;color:var(--content-text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border .12s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:#C8161D}
 .form-textarea{resize:vertical;min-height:90px;line-height:1.6}
 .form-select option{background:var(--surface2)}
 .progress-track{display:flex;gap:4px;margin:14px 0 20px}
@@ -81,30 +93,34 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 .badge-red{background:var(--red-bg);color:var(--red)}
 .week-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.section-title{font-size:13px;font-weight:600;color:var(--text)}
-.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg)}
-.login-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:36px;width:360px}
-.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
-.login-logo-icon{width:40px;height:40px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700}
-.login-logo-text{font-size:17px;font-weight:600;color:var(--text)}
-.login-form-group{margin-bottom:14px}
-.login-label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block}
-.login-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border .12s}
-.login-input:focus{border-color:var(--blue)}
-.login-btn{width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:6px;transition:background .12s;display:flex;align-items:center;justify-content:center;gap:8px}
-.login-btn:hover{background:#3d7de0}
-.login-btn:disabled{opacity:.6;cursor:not-allowed}
-.login-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:16px}
-.error-banner{background:var(--red-bg);border:1px solid rgba(239,83,80,.3);border-radius:6px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:var(--red)}
+.section-title{font-size:13px;font-weight:600;color:var(--content-text)}
+.login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#F4F5F7}
+body{background:#F4F5F7}
+.login-card{width:420px;max-width:95vw}
+.login-logo{margin-bottom:28px;text-align:center;background:#F4F5F7;padding:8px 0}
+.login-logo-img{max-width:260px;height:auto;display:block;margin:0 auto}
+.login-tagline{margin-top:10px;font-size:10px;letter-spacing:2px;color:#9CA3AF;text-transform:uppercase;font-family:'DM Sans',sans-serif;text-align:center}
+.login-form-card{background:#FFFFFF;border:1px solid #E5E7EB;border-radius:16px;padding:36px;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.login-form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:#C8161D}
+.login-form-group{margin-bottom:18px}
+.login-label{font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px;display:block}
+.login-input{width:100%;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:12px 14px;color:#111827;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border .15s,box-shadow .15s}
+.login-input:focus{border-color:#C8161D;box-shadow:0 0 0 3px rgba(200,22,29,0.08);background:#fff}
+.login-input::placeholder{color:#D1D5DB}
+.login-btn{width:100%;padding:13px;background:#C8161D;color:#FFFFFF;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:10px;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:1px;text-transform:uppercase}
+.login-btn:hover{background:#A8121A}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-hint{font-size:11px;color:#9CA3AF;text-align:center;margin-top:16px;letter-spacing:.3px}
+.error-banner{background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:9px 12px;display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:12px;color:#B91C1C}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--text);z-index:2000;display:flex;align-items:center;gap:8px}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
 .modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:600px;max-height:92vh;overflow-y:auto}
 .modal-wide{max-width:820px}
 .modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between}
-.modal-title{font-size:15px;font-weight:600;color:var(--text)}
+.modal-title{font-size:15px;font-weight:600;color:var(--content-text)}
 .modal-body{padding:18px 22px}
 .modal-footer{padding:12px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
-.empty-state{text-align:center;padding:48px 20px;color:var(--text3)}
+.empty-state{text-align:center;padding:48px 20px;color:var(--content-text3)}
 .empty-state i{font-size:36px;margin-bottom:12px;display:block}
 .empty-state-title{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:6px}
 .spin{animation:spin 1s linear infinite;display:inline-block}
@@ -130,51 +146,54 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 <div id="login-screen" class="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <div class="login-logo-icon">G</div>
-      <div>
-        <div class="login-logo-text">GCC ELT Updates</div>
-        <div style="font-size:11px;color:var(--text3)">Weekly Leadership Readout</div>
+      <img src="pulse-logo.png" alt="PULSE by JAGGAER" class="login-logo-img"/>
+      <div class="login-tagline">Performance · Unified Leadership · Success Engine</div>
+    </div>
+    <div class="login-form-card">
+      <div id="login-error" class="error-banner" style="display:none">
+        <i class="ti ti-alert-circle"></i><span id="login-error-msg">Invalid credentials</span>
       </div>
+      <div class="login-form-group">
+        <label class="login-label">Email</label>
+        <input class="login-input" id="login-email" type="email" placeholder="you@jaggaer.com" autocomplete="email"/>
+      </div>
+      <div class="login-form-group">
+        <label class="login-label">Password</label>
+        <input class="login-input" id="login-pass" type="password" placeholder="Password" autocomplete="current-password"/>
+      </div>
+      <button class="login-btn" id="login-btn">
+        <span id="login-btn-text">Sign In to PULSE</span>
+        <i class="ti ti-loader-2 spin" id="login-spin" style="display:none"></i>
+      </button>
+      <div class="login-hint">Contact your CS admin to request access</div>
     </div>
-    <div id="login-error" class="error-banner" style="display:none">
-      <i class="ti ti-alert-circle"></i><span id="login-error-msg">Invalid credentials</span>
-    </div>
-    <div class="login-form-group">
-      <label class="login-label">Email</label>
-      <input class="login-input" id="login-email" type="email" placeholder="you@company.com"/>
-    </div>
-    <div class="login-form-group">
-      <label class="login-label">Password</label>
-      <input class="login-input" id="login-pass" type="password" placeholder="Password"/>
-    </div>
-    <button class="login-btn" id="login-btn" onclick="handleLogin()">
-      <span id="login-btn-text">Sign In</span>
-      <i class="ti ti-loader-2 spin" id="login-spin" style="display:none"></i>
-    </button>
-    <div class="login-hint">Same credentials as GCC Portfolio</div>
   </div>
 </div>
 
 <!-- PORTAL SELECTOR -->
-<div id="portal-selector" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:24px">
+<div id="portal-selector" style="display:none;position:fixed;inset:0;background:#F4F5F7;z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:24px">
   <div style="text-align:center;margin-bottom:8px">
-    <div style="width:48px;height:48px;background:var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;margin:0 auto 12px">G</div>
-    <div style="font-size:20px;font-weight:600;color:var(--text)">GCC Operations Suite</div>
-    <div style="font-size:13px;color:var(--text3);margin-top:4px">Welcome back, <span id="ps-name"></span>. Select a portal to continue.</div>
+    <img src="pulse-logo.png" alt="PULSE" style="max-width:220px;height:auto;display:block;margin:0 auto 16px"/>
+    <div style="font-size:11px;color:#9CA3AF;letter-spacing:2px;text-transform:uppercase;font-family:'DM Sans',sans-serif;margin-bottom:6px">Welcome back, <span id="ps-name" style="color:#6B7280;font-weight:600"></span></div>
+    <div style="font-size:13px;color:#6B7280;font-family:'DM Sans',sans-serif">Select a portal to continue</div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:520px;width:100%;padding:0 20px">
-    <div onclick="selectPortal('portfolio')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;cursor:pointer;transition:all .15s;text-align:center" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
-      <i class="ti ti-folders" style="font-size:32px;color:var(--blue);margin-bottom:12px;display:block"></i>
-      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">Portfolio Tool</div>
-      <div style="font-size:11px;color:var(--text3)">Projects, KPIs, milestones and blockers</div>
+    <div onclick="selectPortal('portfolio')" style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:14px;padding:28px 24px;cursor:pointer;transition:all .15s;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06)" onmouseover="this.style.borderColor='#C8161D';this.style.boxShadow='0 4px 12px rgba(200,22,29,0.12)'" onmouseout="this.style.borderColor='#E5E7EB';this.style.boxShadow='0 1px 4px rgba(0,0,0,0.06)'">
+      <div style="width:48px;height:48px;background:#FEF2F2;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+        <i class="ti ti-folders" style="font-size:22px;color:#C8161D"></i>
+      </div>
+      <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:6px;font-family:'DM Sans',sans-serif">Portfolio Tool</div>
+      <div style="font-size:11px;color:#9CA3AF;font-family:'DM Sans',sans-serif">Projects, KPIs, milestones and blockers</div>
     </div>
-    <div onclick="selectPortal('elt')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;cursor:pointer;transition:all .15s;text-align:center" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
-      <i class="ti ti-messages" style="font-size:32px;color:var(--purple);margin-bottom:12px;display:block"></i>
-      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">ELT Weekly Updates</div>
-      <div style="font-size:11px;color:var(--text3)">Leadership readouts and weekly submissions</div>
+    <div onclick="selectPortal('elt')" style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:14px;padding:28px 24px;cursor:pointer;transition:all .15s;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06)" onmouseover="this.style.borderColor='#C8161D';this.style.boxShadow='0 4px 12px rgba(200,22,29,0.12)'" onmouseout="this.style.borderColor='#E5E7EB';this.style.boxShadow='0 1px 4px rgba(0,0,0,0.06)'">
+      <div style="width:48px;height:48px;background:#FEF2F2;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+        <i class="ti ti-messages" style="font-size:22px;color:#C8161D"></i>
+      </div>
+      <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:6px;font-family:'DM Sans',sans-serif">CS ELT Updates</div>
+      <div style="font-size:11px;color:#9CA3AF;font-family:'DM Sans',sans-serif">Leadership readouts and weekly submissions</div>
     </div>
   </div>
-  <button onclick="handleSignOut()" style="background:transparent;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:8px">Sign out</button>
+  <button onclick="handleSignOut()" style="background:transparent;border:none;color:#9CA3AF;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px;transition:color .12s" onmouseover="this.style.color='#6B7280'" onmouseout="this.style.color='#9CA3AF'">Sign out</button>
 </div>
 
 <!-- APP -->
@@ -182,7 +201,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
   <div class="sidebar">
     <div class="sidebar-logo">
       <div class="logo-icon">G</div>
-      <div><div class="logo-text">GCC ELT Updates</div><div class="logo-sub">Weekly Readout</div></div>
+      <div><div class="logo-text">CS ELT Updates</div><div class="logo-sub">Weekly Readout</div></div>
     </div>
     <div class="sidebar-nav">
       <div class="nav-section">
@@ -216,7 +235,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
     <div class="topbar">
       <div>
         <div class="topbar-title" id="page-title">Dashboard</div>
-        <div style="font-size:11px;color:var(--text3)" id="page-sub">GCC ELT Weekly Update Tool</div>
+        <div style="font-size:11px;color:var(--text3)" id="page-sub">CS ELT Weekly Update Tool</div>
       </div>
       <div class="topbar-actions">
         <button class="btn btn-primary" id="btn-submit" onclick="nav('submit',null)"><i class="ti ti-edit"></i> <span id="btn-submit-label">Submit Update</span></button>
@@ -258,6 +277,7 @@ if (!window._sbElt) {
 const sb = window._sbElt;
 
 let currentUser=null, userProfile=null, isSuperadmin=false;
+const DEPARTMENTS = ['GCC', 'CSM', 'PS', 'CS Ops', 'GCC Ops', 'GPT', 'Pre-Sales', 'Sales', 'Marketing', 'Account Manager', 'Partner Support'];
 let currentView='home';
 let submissions=[], eltUsers=[], weekFiles={};
 let toastTimer=null;
@@ -422,12 +442,12 @@ async function loadProfile() {
     } else {
       const byEmail = await dbFetch('profiles?email=eq.' + encodeURIComponent(currentUser.email) + '&limit=1');
       userProfile = byEmail && byEmail.length > 0 ? byEmail[0] : {
-        name: currentUser.email, role:'GCC', initials:'??', portal_access:'elt', is_admin:false, can_edit:false
+        name: currentUser.email, role:'CS', initials:'??', portal_access:'elt', is_admin:false, can_edit:false
       };
     }
     isSuperadmin = userProfile?.is_admin && userProfile?.portal_access === 'both';
   } catch(e) {
-    userProfile = { name:currentUser.email, role:'GCC', initials:'??', portal_access:'elt' };
+    userProfile = { name:currentUser.email, role:'CS', initials:'??', portal_access:'elt' };
   }
 }
 
@@ -481,7 +501,7 @@ function nav(view, el) {
 function renderView(view) {
   currentView = view;
   const titles = {
-    home:    ['Dashboard','GCC ELT Weekly Update Tool'],
+    home:    ['Dashboard','CS ELT Weekly Update Tool'],
     submit:  ['Submit Update','Complete your weekly leadership update'],
     history: ['Submission History','All weekly ELT submissions'],
     team:    ['Team','ELT team members'],
@@ -610,7 +630,7 @@ function renderSubmitForm() {
           <div class="user-avatar" style="width:36px;height:36px;font-size:12px">${userProfile?.initials||'??'}</div>
           <div>
             <div style="font-size:13px;font-weight:500;color:var(--text)">${displayName}</div>
-            <div style="font-size:11px;color:var(--text3)">${userProfile?.role||''} ${userProfile?.region?'&bull; '+userProfile.region:''}</div>
+            <div style="font-size:11px;color:var(--text3)">${userProfile?.department||userProfile?.role||''} ${userProfile?.region?'&bull; '+userProfile.region:''}</div>
           </div>
           ${mySub ? '<span class="badge badge-amber" style="margin-left:auto">Editing existing</span>' : ''}
         </div>
@@ -763,7 +783,7 @@ async function viewConsolidated(week) {
     const entries = subs.filter(s => s.answers?.[sec.id]).map(s => `
       <div style="margin-bottom:12px;padding:10px;background:var(--surface2);border-radius:6px">
         <div style="font-size:10px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">
-          ${s.user_display_name||s.submitter||'—'} &bull; ${s.user_role||''} ${s.user_region?'&bull; '+s.user_region:''}
+          ${s.user_display_name||s.submitter||'—'} &bull; ${s.user_department||s.user_role||''} ${s.user_region?'&bull; '+s.user_region:''}
         </div>
         <div style="font-size:12px;color:var(--text2);line-height:1.6">${s.answers[sec.id]}</div>
       </div>`).join('');
@@ -962,12 +982,87 @@ async function downloadFile(path, filename) {
 }
 
 // ── Team view ──────────────────────────────────────────
+
+function openCreateELTUser() {
+  if (!isSuperadmin) return;
+  openModal(`
+  <div class="modal-header">
+    <div><div class="modal-title">Add ELT User</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Create a new CS ELT team member</div></div>
+    <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="modal-body">
+    <div style="font-size:12px;color:var(--text2);padding:10px;background:var(--surface2);border-radius:6px;margin-bottom:14px">
+      <i class="ti ti-info-circle" style="color:var(--blue)"></i>
+      Create the login account in Supabase Auth first, then complete this form.
+      <a href="https://supabase.com/dashboard" target="_blank" style="color:var(--blue);margin-left:4px">Open Supabase <i class="ti ti-external-link" style="font-size:10px"></i></a>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" id="cu-name" placeholder="e.g. Sarah Chen"/></div>
+      <div class="form-group"><label class="form-label">Display Name</label><input class="form-input" id="cu-display" placeholder="e.g. Sarah"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Email *</label><input class="form-input" id="cu-email" type="email" placeholder="user@company.com"/></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Department</label><select class="form-select" id="cu-dept"><option value="">— Select —</option><option value="GCC">GCC</option><option value="CSM">CSM</option><option value="PS">PS</option><option value="CS Ops">CS Ops</option><option value="GCC Ops">GCC Ops</option><option value="GPT">GPT</option><option value="Pre-Sales">Pre-Sales</option><option value="Sales">Sales</option><option value="Marketing">Marketing</option><option value="Account Manager">Account Manager</option><option value="Partner Support">Partner Support</option></select></div>
+      <div class="form-group"><label class="form-label">Role / Title</label><input class="form-input" id="cu-role" placeholder="e.g. Regional Manager"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Region</label><select class="form-select" id="cu-region"><option value="">— Select —</option><option>Global</option><option>US</option><option>EMEA</option><option>APAC</option><option>LATAM</option></select></div>
+      <div class="form-group"><label class="form-label">Access Level</label><select class="form-select" id="cu-access"><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="portal_admin">Portal Admin</option></select></div>
+    </div>
+    <div id="cu-error" style="display:none;background:var(--red-bg);border:1px solid rgba(239,83,80,.3);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--red);margin-top:4px"></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" id="cu-btn" onclick="saveCreateELTUser()"><i class="ti ti-user-plus"></i> Create Profile</button>
+  </div>`);
+}
+
+async function saveCreateELTUser() {
+  const name = document.getElementById('cu-name').value.trim();
+  const email = document.getElementById('cu-email').value.trim();
+  const display = document.getElementById('cu-display').value.trim() || name.split(' ')[0];
+  const dept = document.getElementById('cu-dept').value;
+  const role = document.getElementById('cu-role').value.trim();
+  const region = document.getElementById('cu-region').value;
+  const access = document.getElementById('cu-access').value;
+  const errEl = document.getElementById('cu-error');
+  errEl.style.display = 'none';
+  if (!name || !email) { errEl.textContent = 'Name and email required.'; errEl.style.display='block'; return; }
+  const btn = document.getElementById('cu-btn');
+  btn.disabled = true; btn.textContent = 'Creating...';
+  // Check if profile already exists
+  const existing = await dbFetch('profiles?email=eq.'+encodeURIComponent(email)+'&limit=1');
+  if (existing && existing.length > 0) {
+    const pa = existing[0].portal_access === 'portfolio' ? 'both' : (existing[0].portal_access || 'elt');
+    await dbFetch('profiles?id=eq.'+existing[0].id, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({
+      name, display_name:display, department:dept, role, region, portal_access:pa,
+      can_edit:access==='editor'||access==='portal_admin', is_admin:access==='portal_admin',
+      initials:name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
+    })});
+    closeModal(); showToast(name+' updated with ELT access.'); renderELTTeam(); return;
+  }
+  // Create via signUp
+  const {data, error} = await sb.auth.signUp({email, password:Math.random().toString(36).slice(2)+'Aa1!', options:{data:{name}}});
+  if (error && !data?.user?.id) {
+    errEl.textContent = 'Auth error: '+error.message+'. Create the account in Supabase first.';
+    errEl.style.display='block'; btn.disabled=false; btn.innerHTML='<i class="ti ti-user-plus"></i> Create Profile'; return;
+  }
+  const uid = data?.user?.id || crypto.randomUUID();
+  await dbFetch('profiles', {method:'POST', prefer:'return=minimal', body:JSON.stringify({
+    id:uid, email, name, display_name:display, department:dept, role, region,
+    initials:name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2),
+    portal_access:'elt', can_edit:access==='editor'||access==='portal_admin',
+    is_admin:access==='portal_admin', must_change_password:true
+  })});
+  closeModal(); showToast(name+' added. They must set password on first login.'); renderELTTeam();
+}
+
 async function renderELTTeam() {
   const c = document.getElementById('content');
   c.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3)"><i class="ti ti-loader-2 spin" style="font-size:24px"></i></div>';
   const users = await dbFetch('profiles?order=display_name') || [];
   const filtered = users.filter(u => u.portal_access==='elt' || u.portal_access==='both');
-  const cols = '2fr 1fr 1fr 1fr 80px';
+  const cols = '2fr 1fr 1fr 1fr 1fr 80px';
   c.innerHTML = `
   <div class="section-header">
     <div><div class="section-title">ELT Team (${filtered.length})</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Users with ELT portal access</div></div>
@@ -976,6 +1071,7 @@ async function renderELTTeam() {
     <div style="display:grid;grid-template-columns:${cols};padding:9px 16px;background:var(--surface2);border-bottom:1px solid var(--border)">
       <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">User</div>
       <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Display Name</div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Department</div>
       <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Role</div>
       <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Access</div>
       <div></div>
@@ -987,10 +1083,10 @@ async function renderELTTeam() {
         <div><div style="font-size:13px;font-weight:500;color:var(--text)">${u.name||u.email}</div><div style="font-size:10px;color:var(--text3)">${u.email}</div></div>
       </div>
       <div style="font-size:12px;color:var(--text2)">${u.display_name||'<span style="color:var(--text3)">Not set</span>'}</div>
+      <div style="font-size:12px;color:var(--text2)">${u.department||'—'}</div>
       <div style="font-size:12px;color:var(--text2)">${u.role||'—'}</div>
       <div><span class="badge ${u.is_admin?'badge-amber':u.can_edit?'badge-blue':'badge-gray'}">${u.is_admin?'Admin':u.can_edit?'Editor':'Viewer'}</span></div>
-      <div>${isSuperadmin?`<button class="icon-btn" onclick="openEditDisplayName('${u.id}','${u.display_name||u.name||''}')"><i class="ti ti-edit"></i></button>`:''}
-      </div>
+   <div>${isSuperadmin ? '<button class="icon-btn" onclick="editELTUser(\'' + u.id + '\')"><i class="ti ti-edit"></i></button>' : ''}</div>  </div>
     </div>`).join('')}
   </div>
   <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:var(--radius-lg);font-size:12px;color:var(--text3)">
@@ -999,11 +1095,25 @@ async function renderELTTeam() {
   </div>`;
 }
 
-function openEditDisplayName(uid, current) {
+
+function editELTUser(uid) {
+  if (!isSuperadmin) return;
+  // Find user data from DOM or re-fetch
+  dbFetch('profiles?id=eq.'+uid+'&limit=1').then(data => {
+    if (!data || !data.length) return;
+    const u = data[0];
+    openEditDisplayName(uid, u.display_name||u.name||'', u.department||'');
+  });
+}
+
+function openEditDisplayName(uid, current, currentDept) {
   openModal(`
-  <div class="modal-header"><div><div class="modal-title">Set Display Name</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-header"><div><div class="modal-title">Edit User</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
-    <div class="form-group"><label class="form-label">Display Name</label><input class="form-input" id="dn-val" value="${current}" placeholder="e.g. Michi"/><div style="font-size:10px;color:var(--text3);margin-top:4px">This is how the user appears on the dashboard and in reports.</div></div>
+    <div class="form-group"><label class="form-label">Display Name</label><input class="form-input" id="dn-val" value="${current}" placeholder="e.g. Michi"/><div style="font-size:10px;color:var(--text3);margin-top:4px">How the user appears on the dashboard and in reports.</div></div>
+    <div class="form-group"><label class="form-label">Department</label>
+      <select class="form-select" id="dn-dept"><option value="">— Select —</option><option value="GCC">${currentDept==='GCC'?'selected':''}>GCC</option><option value="CSM">${currentDept==='CSM'?'selected':''}>CSM</option><option value="PS">${currentDept==='PS'?'selected':''}>PS</option><option value="CS Ops">${currentDept==='CS Ops'?'selected':''}>CS Ops</option><option value="GCC Ops">${currentDept==='GCC Ops'?'selected':''}>GCC Ops</option><option value="GPT">${currentDept==='GPT'?'selected':''}>GPT</option><option value="Pre-Sales">${currentDept==='Pre-Sales'?'selected':''}>Pre-Sales</option><option value="Sales">${currentDept==='Sales'?'selected':''}>Sales</option><option value="Marketing">${currentDept==='Marketing'?'selected':''}>Marketing</option><option value="Account Manager">${currentDept==='Account Manager'?'selected':''}>Account Manager</option><option value="Partner Support">${currentDept==='Partner Support'?'selected':''}>Partner Support</option></select>
+    </div>
   </div>
   <div class="modal-footer">
     <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -1013,8 +1123,11 @@ function openEditDisplayName(uid, current) {
 
 async function saveDisplayName(uid) {
   const val = document.getElementById('dn-val').value.trim();
-  await dbFetch(`profiles?id=eq.${uid}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({display_name:val})});
-  closeModal(); showToast('Display name updated.'); renderELTTeam();
+  const dept = document.getElementById('dn-dept').value;
+  const updates = {display_name: val};
+  if (dept) updates.department = dept;
+  await dbFetch('profiles?id=eq.'+uid, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify(updates)});
+  closeModal(); showToast('User updated.'); renderELTTeam();
 }
 
 // ── CSV Export ─────────────────────────────────────────
@@ -1023,12 +1136,13 @@ function exportCSV() { exportToCSV(submissions, `gcc-elt-all-${currentWeek()}.cs
 
 function exportToCSV(data, filename) {
   if (data.length === 0) { showToast('No data to export.', 'error'); return; }
-  const headers = ['Week','Display Name','Full Name','Email','Role','Region',...SECTIONS.map(s=>s.label),'Submitted At'];
+  const headers = ['Week','Display Name','Full Name','Email','Department','Role','Region',...SECTIONS.map(s=>s.label),'Submitted At'];
   const rows = data.map(s => [
     s.week_date||'',
     s.user_display_name||s.submitter||'',
     s.submitted_by||'',
     s.user_email||'',
+    s.user_department||'',
     s.user_role||'',
     s.user_region||'',
     ...SECTIONS.map(sec => (s.answers?.[sec.id]||'').replace(/"/g,'""').replace(/\n/g,' ')),
@@ -1060,6 +1174,8 @@ function showToast(msg, type='success') {
   t.style.display='flex'; clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.style.display='none', 3000);
 }
+
+document.getElementById('login-btn').addEventListener('click', handleLogin);
 </script>
 </body>
 </html>
