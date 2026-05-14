@@ -219,6 +219,23 @@ body{background:#F4F5F7}
 .tab.active{color:#C8161D;border-bottom-color:#C8161D}
 .spin{animation:spin 1s linear infinite;display:inline-block}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* Task/Milestone status indicators */
+.status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+.status-dot-gray{background:#9CA3AF}
+.status-dot-green{background:var(--green)}
+.status-dot-amber{background:var(--amber)}
+.ms-row{border-radius:8px;margin-bottom:8px;border:1px solid var(--border);overflow:hidden}
+.ms-row.blocked{background:var(--red-bg);border-color:rgba(200,22,29,0.3)}
+.ms-row.completed{background:var(--green-bg);border-color:rgba(5,150,105,0.2)}
+.ms-header{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;background:transparent;user-select:none}
+.ms-header:hover{background:rgba(0,0,0,0.02)}
+.ms-tasks{padding:0 12px 10px 32px;display:flex;flex-direction:column;gap:4px}
+.task-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:12px}
+.task-row.blocked{background:var(--red-bg);border-color:rgba(200,22,29,0.3)}
+.task-row.completed{background:var(--green-bg);border-color:rgba(5,150,105,0.2);opacity:0.85}
+.task-row .task-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chevron-icon{font-size:13px;color:var(--text3);transition:transform .15s;flex-shrink:0}
+.chevron-icon.open{transform:rotate(90deg)}
 </style>
 </head>
 <body>
@@ -661,8 +678,8 @@ async function renderDashboard(){
   const completed=projects.filter(p=>p.status==='Completed').length;
   const atRisk=projects.filter(p=>p.rag==='R'||p.rag==='A').length;
   const allBlocks=projects.reduce((a,p)=>a+(p.blockers?.length||0),0);
-  const overdueMs=projects.flatMap(p=>(p.milestones||[]).filter(m=>!m.done&&isOverdue(m.date))).length;
-  const upMs=projects.flatMap(p=>(p.milestones||[]).filter(m=>!m.done).map(m=>({...m,pn:p.name}))).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,6);
+  const overdueMs=projects.flatMap(p=>(p.milestones||[]).filter(m=>m.status!=='completed'&&isOverdue(m.date))).length;
+  const upMs=projects.flatMap(p=>(p.milestones||[]).filter(m=>m.status!=='completed').map(m=>({...m,pn:p.name}))).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,6);
   return`
   ${overdueMs>0?`<div class="alert-banner"><i class="ti ti-alert-triangle"></i><span class="alert-text">${overdueMs} milestone${overdueMs>1?'s':''} overdue across the portfolio.</span></div>`:''}
   <div class="stats-grid">
@@ -701,7 +718,7 @@ function renderProjectTable(list){
   return`<div class="data-table">
     <div class="table-head" style="grid-template-columns:${cols}"><div class="th">Project</div><div class="th">Type</div><div class="th">Status</div><div class="th">Owner</div><div class="th">Due</div><div class="th">Progress</div><div class="th"></div></div>
     ${list.map(p=>{
-      const done=(p.milestones||[]).filter(m=>m.done).length,tot=(p.milestones||[]).length;
+      const done=(p.milestones||[]).filter(m=>m.status==='completed').length,tot=(p.milestones||[]).length;
       const days=daysUntil(p.due);
       return`<div class="table-row" style="grid-template-columns:${cols}" onclick="openProjectDetail('${p.id}')">
         <div><div class="row-primary">${p.name}</div><div class="row-secondary">${p.region||''} &bull; ${p.impact||''} impact &bull; ${done}/${tot} milestones</div></div>
@@ -722,15 +739,19 @@ function renderProjectTable(list){
 // ── Project Detail ────────────────────────────────────
 function openProjectDetail(id){
   const p=projects.find(x=>x.id===id); if(!p) return;
-  const doneTasks=(p.tasks||[]).filter(t=>t.done).length;
   const days=daysUntil(p.due);
+  const totalTasks=( p.milestones||[]).reduce((a,m)=>a+(m.tasks||[]).length,0);
+  const doneTasks=(p.milestones||[]).reduce((a,m)=>a+(m.tasks||[]).filter(t=>t.status==='completed').length,0);
   openModal(`
   <div class="detail-header" style="display:flex;align-items:flex-start;justify-content:space-between">
     <div>
       <div class="detail-title">${p.name}</div>
       <div class="detail-badges">${statusBadge(p)} ${typeBadge(p.type)} ${priBadge(p.priority)} <span class="badge badge-gray">${p.region||''}</span></div>
     </div>
-    <button class="icon-btn" onclick="closeModal()" style="flex-shrink:0;margin-left:8px" title="Close"><i class="ti ti-x"></i></button>
+    <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px">
+      ${canEdit?`<button class="btn btn-ghost" style="font-size:11px" onclick="openEditProject('${id}')"><i class="ti ti-edit"></i> Edit</button>`:''}
+      <button class="icon-btn" onclick="closeModal()" title="Close"><i class="ti ti-x"></i></button>
+    </div>
   </div>
   <div class="detail-body">
     <div>
@@ -742,15 +763,15 @@ function openProjectDetail(id){
         <div class="meta-block"><div class="meta-label">Impact</div><div class="meta-value">${p.impact||'—'}</div></div>
       </div>
       <div style="margin-bottom:16px">
-        <div class="meta-label" style="margin-bottom:6px">Progress</div>
+        <div class="meta-label" style="margin-bottom:6px">Overall Progress</div>
         <div style="display:flex;align-items:center;gap:10px"><div class="progress-bar" style="flex:1;height:8px"><div class="progress-fill ${p.progress>=100?'green':(p.rag==='R'||p.rag==='A')?'amber':''}" style="width:${p.progress||0}%"></div></div><span style="font-size:13px;font-weight:600;font-family:'DM Mono',monospace">${p.progress||0}%</span></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">${doneTasks}/${totalTasks} tasks complete across ${(p.milestones||[]).length} milestones</div>
       </div>
       ${(p.kpis||[]).length>0?`<div style="margin-bottom:16px"><div class="meta-label" style="margin-bottom:6px">Linked KPIs</div><div style="display:flex;gap:6px;flex-wrap:wrap">${(p.kpis||[]).map(k=>{const def=KPI_DEFS.find(x=>x.id===k);return`<span class="badge badge-blue">${def?def.name:k}</span>`;}).join('')}</div></div>`:''}
-      ${p.acceptance?`<div style="margin-bottom:16px"><div class="meta-label" style="margin-bottom:4px">Acceptance Criteria</div><div style="font-size:12px;color:var(--text2);line-height:1.6;padding:8px 10px;background:var(--surface2);border-radius:6px">${p.acceptance}</div></div>`:''}
+      ${p.acceptance?`<div style="margin-bottom:16px"><div class="meta-label" style="margin-bottom:4px">Definition of Done</div><div style="font-size:12px;color:var(--text2);line-height:1.6;padding:8px 10px;background:var(--surface2);border-radius:6px">${p.acceptance}</div></div>`:''}
       <div>
-        <div class="meta-label" style="margin-bottom:8px">Tasks (${doneTasks}/${(p.tasks||[]).length} complete)</div>
-        ${(p.tasks||[]).length===0?'<div style="font-size:12px;color:var(--text3)">No tasks yet.</div>':(p.tasks||[]).map(t=>`<div class="task-item"><div class="task-cb ${t.done?'done':''}" onclick="${canEdit?`toggleTask('${id}','${t.id}')`:''}" style="cursor:${canEdit?'pointer':'default'}"><i class="ti ti-check"></i></div><div style="flex:1"><div class="task-name ${t.done?'done':''}">${t.name}</div><div style="font-size:10px;color:var(--text3)">${t.owner||''}</div></div>${priBadge(t.priority)}<div class="task-due" style="color:${isOverdue(t.due)&&!t.done?'var(--red)':'var(--text3)'}">${t.due||''}</div>${canEdit?`<button class="icon-btn" onclick="openEditTask('${id}','${t.id}')" style="flex-shrink:0"><i class="ti ti-edit"></i></button>`:''}</div>`).join('')}
-        ${canEdit?`<button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="openAddTask('${id}')"><i class="ti ti-plus"></i> Add task</button>`:''}
+        <div class="meta-label" style="margin-bottom:8px">Milestones &amp; Tasks</div>
+        <div id="ms-section" data-pid="${id}">${renderMsSection(p)}</div>
       </div>
     </div>
     <div>
@@ -759,16 +780,12 @@ function openProjectDetail(id){
         <div class="sp-row"><div class="sp-label">Start</div><div class="sp-value" style="font-family:'DM Mono',monospace">${p.start||'—'}</div></div>
         <div class="sp-row"><div class="sp-label">Due</div><div class="sp-value" style="font-family:'DM Mono',monospace">${p.due||'—'}</div></div>
         <div class="sp-row"><div class="sp-label">Days remaining</div><div class="sp-value" style="color:${days<30&&p.status!=='Completed'?'var(--amber)':'var(--text)'}">${p.status==='Completed'?'Done':days>0?days:'Overdue'}</div></div>
+        <div class="sp-row"><div class="sp-label">Milestones</div><div class="sp-value">${(p.milestones||[]).filter(m=>m.status==='completed').length}/${(p.milestones||[]).length} done</div></div>
       </div>
       <div class="sp-panel">
-        <div class="meta-label" style="margin-bottom:8px">Milestones</div>
-        ${(p.milestones||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No milestones.</div>':(p.milestones||[]).map(m=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)"><div class="ms-dot" style="background:${m.done?'var(--green)':isOverdue(m.date)?'var(--red)':'var(--text3)'}"></div><div style="flex:1;font-size:11px;color:${m.done?'var(--text3)':'var(--text)'};${m.done?'text-decoration:line-through':''};">${m.name}</div><div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${m.date}</div>${canEdit?`<button class="icon-btn" onclick="openEditMilestone('${id}','${m.id}')" style="flex-shrink:0;width:22px;height:22px"><i class="ti ti-edit" style="font-size:12px"></i></button>`:''}</div>`).join('')}
-        ${canEdit?`<button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="openAddMilestone('${id}')"><i class="ti ti-plus"></i> Add milestone</button>`:''}
-      </div>
-      <div class="sp-panel">
-        <div class="meta-label" style="margin-bottom:8px;color:${(p.blockers||[]).length>0?'var(--red)':'var(--text3)'}">Blockers (${(p.blockers||[]).length})</div>
-        ${(p.blockers||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No active blockers.</div>':(p.blockers||[]).map(b=>`<div style="background:var(--red-bg);border:1px solid rgba(239,83,80,.2);border-radius:6px;padding:8px 10px;margin-bottom:6px"><div style="font-size:12px;color:var(--red);font-weight:600">${b.title}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${b.desc}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Owner: ${b.owner} &bull; Raised: ${b.raised}</div>${canEdit?`<button class="btn btn-ghost" style="margin-top:6px;font-size:10px" onclick="resolveBlocker('${id}','${b.id}')"><i class="ti ti-check"></i> Resolve</button>`:''}</div>`).join('')}
-        ${canEdit?`<button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="openAddBlocker('${id}')"><i class="ti ti-plus"></i> Add blocker</button>`:''}
+        <div class="meta-label" style="margin-bottom:8px;color:${(p.blockers||[]).length>0?'var(--red)':'var(--text3)'}">Project Blockers (${(p.blockers||[]).length})</div>
+        ${(p.blockers||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No project-level blockers.</div>':(p.blockers||[]).map(b=>`<div style="background:var(--red-bg);border:1px solid rgba(239,83,80,.2);border-radius:6px;padding:8px 10px;margin-bottom:6px"><div style="font-size:12px;color:var(--red);font-weight:600">${b.title}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${b.desc}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Owner: ${b.owner} &bull; Raised: ${b.raised}</div>${canEdit?`<button class="btn btn-ghost" style="margin-top:6px;font-size:10px" onclick="resolveBlocker('${id}','${b.id}')"><i class="ti ti-check"></i> Resolve</button>`:''}</div>`).join('')}
+        ${canEdit?`<button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="openAddBlocker('${id}')"><i class="ti ti-plus"></i> Add project blocker</button>`:''}
       </div>
     </div>
   </div>`,'modal-wide');
@@ -776,9 +793,10 @@ function openProjectDetail(id){
 
 // ── All Tasks ─────────────────────────────────────────
 async function renderAllTasks(){
-  const all=projects.flatMap(p=>(p.tasks||[]).map(t=>({...t,pn:p.name,pid:p.id})));
-  const open=all.filter(t=>!t.done),done=all.filter(t=>t.done);
+  const all=projects.flatMap(p=>(p.milestones||[]).flatMap(m=>(m.tasks||[]).map(t=>({...t,pn:p.name,pid:p.id,msName:m.name,msId:m.id}))));
+  const open=all.filter(t=>t.status!=='completed'),done=all.filter(t=>t.status==='completed');
   const shown=filterTasks==='open'?open:done;
+  const statusColorMap={not_started:'#9CA3AF',on_track:'var(--green)',at_risk:'var(--amber)',blocked:'var(--red)',completed:'var(--green)'};
   return`
   <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
     <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${all.length}</div></div>
@@ -793,27 +811,31 @@ async function renderAllTasks(){
     ${shown.length===0?`<div class="empty-state"><i class="ti ti-checklist"></i><div class="empty-state-title">No tasks here</div></div>`:
     shown.sort((a,b)=>(a.priority||'').localeCompare(b.priority||'')).map(t=>`
     <div class="task-item">
-      <div class="task-cb ${t.done?'done':''}" onclick="${canEdit?`toggleTask('${t.pid}','${t.id}')`:''}" style="cursor:${canEdit?'pointer':'default'}"><i class="ti ti-check"></i></div>
-      <div style="flex:1;min-width:0"><div class="task-name ${t.done?'done':''}">${t.name}</div><div style="font-size:10px;color:var(--text3);margin-top:1px">${t.pn} &bull; ${t.owner||''}</div></div>
+      <span class="status-dot" style="background:${statusColorMap[t.status||'not_started']}"></span>
+      <div style="flex:1;min-width:0"><div class="task-name" style="${t.status==='completed'?'text-decoration:line-through;color:var(--text3)':''}">${t.name}</div><div style="font-size:10px;color:var(--text3);margin-top:1px">${t.pn} &rsaquo; ${t.msName} &bull; ${t.owner||''}</div></div>
+      ${t.blocker?`<span class="badge badge-red" style="font-size:9px">BLOCKED</span>`:''}
       ${priBadge(t.priority)}
-      <div class="task-due" style="color:${isOverdue(t.due)&&!t.done?'var(--red)':'var(--text3)'}">${t.due||''}</div>
+      <div class="task-due" style="color:${isOverdue(t.due)&&t.status!=='completed'?'var(--red)':'var(--text3)'}">${t.due||''}</div>
     </div>`).join('')}
   </div>`;
 }
 
 // ── Milestones ────────────────────────────────────────
 async function renderMilestones(){
-  const all=projects.flatMap(p=>(p.milestones||[]).map(m=>({...m,pn:p.name})));
-  const up=all.filter(m=>!m.done).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const done=all.filter(m=>m.done);
+  const all=projects.flatMap(p=>(p.milestones||[]).map(m=>({...m,pn:p.name,pid:p.id,taskCount:(m.tasks||[]).length,doneCount:(m.tasks||[]).filter(t=>t.status==='completed').length})));
+  const up=all.filter(m=>m.status!=='completed').sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const done=all.filter(m=>m.status==='completed');
+  const blocked=all.filter(m=>m.status==='blocked');
+  const statusColorMap={not_started:'#9CA3AF',on_track:'var(--green)',at_risk:'var(--amber)',blocked:'var(--red)',completed:'var(--green)'};
   return`
-  <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${all.length}</div></div>
-    <div class="stat-card"><div class="stat-label">Upcoming</div><div class="stat-value" style="color:var(--blue)">${up.length}</div></div>
+    <div class="stat-card"><div class="stat-label">In Progress</div><div class="stat-value" style="color:var(--blue)">${up.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Blocked</div><div class="stat-value" style="color:var(--red)">${blocked.length}</div></div>
     <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" style="color:var(--green)">${done.length}</div></div>
   </div>
   <div class="two-col">
-    <div class="panel"><div class="panel-title">Upcoming (${up.length})</div>${up.length===0?'<div style="font-size:12px;color:var(--text3)">None.</div>':up.map(m=>`<div class="ms-item"><div class="ms-dot" style="background:${isOverdue(m.date)?'var(--red)':'var(--green)'}"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text)">${m.name}</div><div style="font-size:10px;color:var(--text3)">${m.pn}</div></div><div style="font-size:10px;color:${isOverdue(m.date)?'var(--red)':'var(--text3)'};font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}</div>
+    <div class="panel"><div class="panel-title">Active (${up.length})</div>${up.length===0?'<div style="font-size:12px;color:var(--text3)">None.</div>':up.map(m=>`<div class="ms-item" style="${m.status==='blocked'?'background:var(--red-bg);border:1px solid rgba(200,22,29,0.2)':''}"><div class="ms-dot" style="background:${statusColorMap[m.status||'not_started']}"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text)">${m.name}${m.status==='blocked'?` <span class="badge badge-red" style="font-size:9px">BLOCKED</span>`:''}</div><div style="font-size:10px;color:var(--text3)">${m.pn} &bull; ${m.doneCount}/${m.taskCount} tasks &bull; ${m.owner||'no owner'}</div></div><div style="font-size:10px;color:${isOverdue(m.date)?'var(--red)':'var(--text3)'};font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}</div>
     <div class="panel"><div class="panel-title">Completed (${done.length})</div>${done.length===0?'<div style="font-size:12px;color:var(--text3)">None yet.</div>':done.map(m=>`<div class="ms-item"><div class="ms-dot" style="background:var(--green)"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text3);text-decoration:line-through">${m.name}</div><div style="font-size:10px;color:var(--text3)">${m.pn}</div></div><div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}</div>
   </div>`;
 }
@@ -840,13 +862,17 @@ async function renderKPIs(){
 
 // ── Blockers ──────────────────────────────────────────
 async function renderBlockers(){
-  const all=projects.flatMap(p=>(p.blockers||[]).map(b=>({...b,pn:p.name,pid:p.id})));
-  if(all.length===0) return`<div class="empty-state"><i class="ti ti-circle-check" style="color:var(--green)"></i><div class="empty-state-title" style="color:var(--text)">No active blockers</div><div>All projects are unblocked.</div></div>`;
+  // Collect project-level, milestone-level, and task-level blockers
+  const projBlocks=projects.flatMap(p=>(p.blockers||[]).map(b=>({...b,type:'Project',pn:p.name,pid:p.id,context:p.name})));
+  const msBlocks=projects.flatMap(p=>(p.milestones||[]).filter(m=>m.blocker).map(m=>({...m.blocker,type:'Milestone',pn:p.name,pid:p.id,msId:m.id,context:`${p.name} › ${m.name}`})));
+  const taskBlocks=projects.flatMap(p=>(p.milestones||[]).flatMap(m=>(m.tasks||[]).filter(t=>t.blocker).map(t=>({...t.blocker,type:'Task',pn:p.name,pid:p.id,msId:m.id,taskId:t.id,context:`${p.name} › ${m.name} › ${t.name}`}))));
+  const all=[...projBlocks,...msBlocks,...taskBlocks];
+  if(all.length===0) return`<div class="empty-state"><i class="ti ti-circle-check" style="color:var(--green)"></i><div class="empty-state-title" style="color:var(--text)">No active blockers</div><div>All projects, milestones and tasks are unblocked.</div></div>`;
   return`<div class="section-title" style="margin-bottom:16px">${all.length} Active Blocker${all.length!==1?'s':''}</div>
   ${all.map(b=>`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--red);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:12px">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between"><div><div style="font-size:13px;font-weight:600;color:var(--red)">${b.title}</div><div style="font-size:11px;color:var(--text3);margin:3px 0">Project: ${b.pn} &bull; Owner: ${b.owner} &bull; Raised: ${b.raised}</div></div><span class="badge badge-red">Blocking</span></div>
-    <div style="font-size:12px;color:var(--text2);margin-top:6px">${b.desc}</div>
-    ${canEdit?`<button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="resolveBlocker('${b.pid}','${b.id}')"><i class="ti ti-check"></i> Mark resolved</button>`:''}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between"><div><div style="font-size:13px;font-weight:600;color:var(--red)">${b.title}</div><div style="font-size:11px;color:var(--text3);margin:3px 0">${b.context} &bull; <span class="badge badge-gray" style="font-size:9px">${b.type}</span> &bull; Owner: ${b.owner||'—'} &bull; Raised: ${b.raised||'—'}</div></div><span class="badge badge-red">Blocking</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-top:6px">${b.desc||''}</div>
+    ${canEdit?`<button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="${b.type==='Project'?`resolveBlocker('${b.pid}','${b.id}')`:b.type==='Milestone'?`resolveMsBlocker('${b.pid}','${b.msId}')`:`resolveTaskBlocker('${b.pid}','${b.msId}','${b.taskId}')`}"><i class="ti ti-check"></i> Mark resolved</button>`:''}
   </div>`).join('')}`;
 }
 
@@ -898,7 +924,7 @@ function openNewProject(){
       </div>
     </div>
     <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="np-desc"></textarea></div>
-    <div class="form-group"><label class="form-label">Acceptance Criteria</label><textarea class="form-textarea" id="np-accept" placeholder="How will success be measured?"></textarea></div>
+    <div class="form-group"><label class="form-label">Definition of Done</label><textarea class="form-textarea" id="np-accept" placeholder="What requirements must be met to consider this project complete?"></textarea></div>
     <div class="form-group"><label class="form-label">RAG Status</label><select class="form-select" id="np-rag"><option value="G">Green — On Track</option><option value="A">Amber — At Risk</option><option value="R">Red — Off Track</option></select></div>
   </div>
   <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveNewProject()"><i class="ti ti-check"></i> Create Project</button></div>`);
@@ -931,25 +957,52 @@ async function saveNewProject(){
   const inserted = await dbFetch('projects', {method:'POST', prefer:'return=representation', headers:{'Prefer':'return=representation'}, body:JSON.stringify(data)});
   if(!inserted){showToast('Failed to save project.','error');return;}
   const newProj = Array.isArray(inserted) ? inserted[0] : inserted;
-  projects.unshift(newProj); updateBadges(); closeModal(); showToast('Project created.'); renderView('projects');
+  projects.unshift(newProj); updateBadges(); closeModal(); showToast('Project created.');
+  // Navigate directly to the new project detail
+  renderView('projects');
+  setTimeout(()=>openProjectDetail(newProj.id),100);
 }
 
 function openEditProject(id){
   if(!canEdit) return;
   const p=projects.find(x=>x.id===id); if(!p) return;
+  const kpiChecks=KPI_DEFS.map(k=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--content-text2)"><input type="checkbox" value="${k.id}" ${(p.kpis||[]).includes(k.id)?'checked':''} style="accent-color:#C8161D"/>${k.name}</label>`).join('');
   openModal(`
   <div class="modal-header"><div><div class="modal-title">Edit Project</div><div class="modal-subtitle">${p.name}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
-    <div class="form-row"><div class="form-group"><label class="form-label">Status</label><select class="form-select" id="ep-status"><option ${p.status==='Planning'?'selected':''}>Planning</option><option ${p.status==='In Progress'?'selected':''}>In Progress</option><option ${p.status==='Completed'?'selected':''}>Completed</option><option ${p.status==='On Hold'?'selected':''}>On Hold</option></select></div><div class="form-group"><label class="form-label">RAG</label><select class="form-select" id="ep-rag"><option value="G" ${p.rag==='G'?'selected':''}>Green</option><option value="A" ${p.rag==='A'?'selected':''}>Amber</option><option value="R" ${p.rag==='R'?'selected':''}>Red</option></select></div></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Progress (%)</label><input class="form-input" id="ep-progress" type="number" min="0" max="100" value="${p.progress||0}"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="ep-due" type="date" value="${p.due||''}"/></div></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="ep-owner" value="${p.owner||''}"/></div></div>
+    <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="ep-name" value="${p.name||''}"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="ep-type"><option ${p.type==='Strategic'?'selected':''}>Strategic</option><option ${p.type==='Operational'?'selected':''}>Operational</option><option ${p.type==='Process'?'selected':''}>Process</option><option ${p.type==='Transformation'?'selected':''}>Transformation</option><option ${p.type==='Workforce'?'selected':''}>Workforce</option><option ${p.type==='Quality'?'selected':''}>Quality</option></select></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="ep-pri"><option ${p.priority==='P1'?'selected':''}>P1</option><option ${p.priority==='P2'?'selected':''}>P2</option><option ${p.priority==='P3'?'selected':''}>P3</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Status</label><select class="form-select" id="ep-status"><option ${p.status==='Planning'?'selected':''}>Planning</option><option ${p.status==='In Progress'?'selected':''}>In Progress</option><option ${p.status==='Completed'?'selected':''}>Completed</option><option ${p.status==='On Hold'?'selected':''}>On Hold</option></select></div><div class="form-group"><label class="form-label">RAG</label><select class="form-select" id="ep-rag"><option value="G" ${p.rag==='G'?'selected':''}>Green — On Track</option><option value="A" ${p.rag==='A'?'selected':''}>Amber — At Risk</option><option value="R" ${p.rag==='R'?'selected':''}>Red — Off Track</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="ep-owner" value="${p.owner||''}"/></div><div class="form-group"><label class="form-label">Sponsor</label><input class="form-input" id="ep-sponsor" value="${p.sponsor||''}"/></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Region</label><select class="form-select" id="ep-region"><option ${p.region==='Global'?'selected':''}>Global</option><option ${p.region==='US'?'selected':''}>US</option><option ${p.region==='EU'?'selected':''}>EU</option><option ${p.region==='EMEA'?'selected':''}>EMEA</option><option ${p.region==='APAC'?'selected':''}>APAC</option><option ${p.region==='LATAM'?'selected':''}>LATAM</option></select></div><div class="form-group"><label class="form-label">Business Impact</label><select class="form-select" id="ep-impact"><option ${p.impact==='Critical'?'selected':''}>Critical</option><option ${p.impact==='High'?'selected':''}>High</option><option ${p.impact==='Medium'?'selected':''}>Medium</option><option ${p.impact==='Low'?'selected':''}>Low</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Start Date</label><input class="form-input" id="ep-start" type="date" value="${p.start||''}"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="ep-due" type="date" value="${p.due||''}"/></div></div>
+    <div class="form-group"><label class="form-label">KPIs Impacted</label><div id="ep-kpis-list" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px 16px">${kpiChecks}</div></div>
     <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="ep-desc">${p.description||''}</textarea></div>
+    <div class="form-group"><label class="form-label">Definition of Done</label><textarea class="form-textarea" id="ep-accept" placeholder="What requirements must be met to consider this project complete?">${p.acceptance||''}</textarea></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-danger" onclick="deleteProject('${id}')"><i class="ti ti-trash"></i> Delete Project</button><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEditProject('${id}')"><i class="ti ti-check"></i> Save</button></div>`);
+  <div class="modal-footer"><button class="btn btn-danger" onclick="deleteProject('${id}')"><i class="ti ti-trash"></i> Delete</button><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEditProject('${id}')"><i class="ti ti-check"></i> Save</button></div>`,'modal-wide');
 }
 
 async function saveEditProject(id){
-  const updates={status:document.getElementById('ep-status').value,rag:document.getElementById('ep-rag').value,progress:parseInt(document.getElementById('ep-progress').value)||0,due:document.getElementById('ep-due').value,owner:document.getElementById('ep-owner').value,description:document.getElementById('ep-desc').value};
+  const name=document.getElementById('ep-name')?.value.trim()||'';
+  if(!name){showToast('Project name required.','error');return;}
+  const kpis=Array.from(document.querySelectorAll('#ep-kpis-list input[type=checkbox]:checked')).map(o=>o.value);
+  const updates={
+    name,
+    type:document.getElementById('ep-type').value,
+    status:document.getElementById('ep-status').value,
+    rag:document.getElementById('ep-rag').value,
+    priority:document.getElementById('ep-pri').value,
+    owner:document.getElementById('ep-owner').value,
+    sponsor:document.getElementById('ep-sponsor').value,
+    region:document.getElementById('ep-region').value,
+    impact:document.getElementById('ep-impact').value,
+    start:document.getElementById('ep-start').value,
+    due:document.getElementById('ep-due').value,
+    description:document.getElementById('ep-desc').value,
+    acceptance:document.getElementById('ep-accept').value,
+    kpis
+  };
   await dbFetch(`projects?id=eq.${id}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify(updates)});
   const idx=projects.findIndex(p=>p.id===id);
   if(idx>-1) projects[idx]={...projects[idx],...updates};
@@ -964,98 +1017,90 @@ async function deleteProject(id){
   updateBadges(); closeModal(); showToast('Project deleted.'); renderView('projects');
 }
 
-function openEditTask(projId, taskId){
+// ── Status helpers ────────────────────────────────────
+const TASK_STATUSES=['not_started','on_track','at_risk','blocked','completed'];
+const statusLabel2=s=>({not_started:'Not Started',on_track:'On Track',at_risk:'At Risk',blocked:'Blocked',completed:'Completed'}[s]||'Not Started');
+function statusDot(s){
+  const map={not_started:'#9CA3AF',on_track:'var(--green)',at_risk:'var(--amber)',blocked:'var(--red)',completed:'var(--green)'};
+  return`<span class="status-dot" style="background:${map[s]||'#9CA3AF'}"></span>`;
+}
+function taskRowClass(t){
+  if(t.status==='blocked') return 'task-row blocked';
+  if(t.status==='completed') return 'task-row completed';
+  return 'task-row';
+}
+function msRowClass(m){
+  if(m.status==='blocked') return 'ms-row blocked';
+  if(m.status==='completed') return 'ms-row completed';
+  return 'ms-row';
+}
+function calcMilestoneProgress(m){
+  const tasks=m.tasks||[];
+  if(tasks.length===0) return m.status==='completed'?100:0;
+  return Math.round(tasks.filter(t=>t.status==='completed').length/tasks.length*100);
+}
+function calcProjectProgress(p){
+  const ms=p.milestones||[];
+  if(ms.length===0) return 0;
+  const total=ms.reduce((a,m)=>a+calcMilestoneProgress(m),0);
+  return Math.round(total/ms.length);
+}
+function recalcAndSave(p){
+  // Recalc project progress from milestones
+  p.progress=calcProjectProgress(p);
+  return dbFetch(`projects?id=eq.${p.id}`,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({milestones:p.milestones,progress:p.progress,tasks:p.tasks||[]})});
+}
+
+// ── Task CRUD (now nested under milestones) ───────────
+function openEditTask(projId, msId, taskId){
   if(!canEdit) return;
   const p=projects.find(x=>x.id===projId); if(!p) return;
-  const t=p.tasks.find(x=>x.id===taskId); if(!t) return;
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  const t=ms.tasks?.find(x=>x.id===taskId); if(!t) return;
+  const statusOpts=TASK_STATUSES.map(s=>`<option value="${s}" ${t.status===s?'selected':''}>${statusLabel2(s)}</option>`).join('');
   openModal(`
-  <div class="modal-header"><div><div class="modal-title">Edit Task</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-header"><div><div class="modal-title">Edit Task</div><div class="modal-subtitle">${ms.name}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
     <div class="form-group"><label class="form-label">Task Name</label><input class="form-input" id="et-name" value="${t.name}"/></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="et-owner" value="${t.owner||''}"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="et-due" type="date" value="${t.due||''}"/></div></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="et-pri"><option ${t.priority==='P1'?'selected':''}>P1</option><option ${t.priority==='P2'?'selected':''}>P2</option><option ${t.priority==='P3'?'selected':''}>P3</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="et-pri"><option ${t.priority==='P1'?'selected':''}>P1</option><option ${t.priority==='P2'?'selected':''}>P2</option><option ${t.priority==='P3'?'selected':''}>P3</option></select></div><div class="form-group"><label class="form-label">Status</label><select class="form-select" id="et-status">${statusOpts}</select></div></div>
+    <div id="et-blocker-section">
+      ${t.blocker?`<div class="form-group" id="et-blocker-display"><label class="form-label" style="color:var(--red)">Active Blocker</label><div style="background:var(--red-bg);border:1px solid rgba(200,22,29,0.3);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--red)">${t.blocker.title}<br/><span style="color:var(--text3);font-size:11px">${t.blocker.desc||''}</span></div><button class="btn btn-ghost" style="margin-top:6px;font-size:11px" onclick="resolveTaskBlocker('${projId}','${msId}','${taskId}')"><i class="ti ti-check"></i> Resolve blocker</button></div>`:''}
+    </div>
+    ${canEdit&&!t.blocker?`<button class="btn btn-ghost" style="font-size:11px;color:var(--red)" onclick="openAddTaskBlocker('${projId}','${msId}','${taskId}')"><i class="ti ti-alert-triangle"></i> Add Blocker</button>`:''}
   </div>
   <div class="modal-footer">
-    <button class="btn btn-danger" onclick="deleteTask('${projId}','${taskId}')"><i class="ti ti-trash"></i> Delete</button>
+    <button class="btn btn-danger" onclick="deleteTask('${projId}','${msId}','${taskId}')"><i class="ti ti-trash"></i> Delete</button>
     <button class="btn btn-ghost" onclick="openProjectDetail('${projId}')">Cancel</button>
-    <button class="btn btn-primary" onclick="saveEditTask('${projId}','${taskId}')"><i class="ti ti-check"></i> Save</button>
-  </div>`, '', true);
+    <button class="btn btn-primary" onclick="saveEditTask('${projId}','${msId}','${taskId}')"><i class="ti ti-check"></i> Save</button>
+  </div>`,'',true);
 }
 
-async function saveEditTask(projId, taskId){
+async function saveEditTask(projId, msId, taskId){
   const p=projects.find(x=>x.id===projId); if(!p) return;
-  const _compTask=document.getElementById('et-comp')?.value||'';
-  const tasks=(p.tasks||[]).map(t=>t.id===taskId?{...t,name:document.getElementById('et-name').value,owner:document.getElementById('et-owner').value,due:document.getElementById('et-due').value,priority:document.getElementById('et-pri').value,completed_date:_compTask}:t);
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({tasks})});
-  p.tasks=tasks; showToast('Task updated.'); openProjectDetail(projId);
+  let newStatus=document.getElementById('et-status').value;
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  ms.tasks=(ms.tasks||[]).map(t=>t.id===taskId?{...t,
+    name:document.getElementById('et-name').value,
+    owner:document.getElementById('et-owner').value,
+    due:document.getElementById('et-due').value,
+    priority:document.getElementById('et-pri').value,
+    status:newStatus
+  }:t);
+  await recalcAndSave(p);
+  showToast('Task updated.'); openProjectDetail(projId);
 }
 
-async function deleteTask(projId, taskId){
+async function deleteTask(projId, msId, taskId){
   const p=projects.find(x=>x.id===projId); if(!p) return;
   if(!confirm('Delete this task?')) return;
-  const tasks=(p.tasks||[]).filter(t=>t.id!==taskId);
-  const pct=tasks.length>0?Math.round(tasks.filter(t=>t.done).length/tasks.length*100):0;
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({tasks,progress:pct})});
-  p.tasks=tasks; p.progress=pct; showToast('Task deleted.'); openProjectDetail(projId);
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  ms.tasks=(ms.tasks||[]).filter(t=>t.id!==taskId);
+  await recalcAndSave(p);
+  showToast('Task deleted.'); openProjectDetail(projId);
 }
 
-function openEditMilestone(projId, msId){
-  if(!canEdit) return;
-  const p=projects.find(x=>x.id===projId); if(!p) return;
-  const m=p.milestones.find(x=>x.id===msId); if(!m) return;
-  openModal(`
-  <div class="modal-header"><div><div class="modal-title">Edit Milestone</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
-  <div class="modal-body">
-    <div class="form-group"><label class="form-label">Milestone Name</label><input class="form-input" id="em-name" value="${m.name}"/></div>
-    <div class="form-group"><label class="form-label">Target Date</label><input class="form-input" id="em-date" type="date" value="${m.date||''}"/></div>
-    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="em-done"><option value="false" ${!m.done?'selected':''}>Pending</option><option value="true" ${m.done?'selected':''}>Completed</option></select></div>
-  </div>
-  <div class="modal-footer">
-    <button class="btn btn-danger" onclick="deleteMilestone('${projId}','${msId}')"><i class="ti ti-trash"></i> Delete</button>
-    <button class="btn btn-ghost" onclick="openProjectDetail('${projId}')">Cancel</button>
-    <button class="btn btn-primary" onclick="saveEditMilestone('${projId}','${msId}')"><i class="ti ti-check"></i> Save</button>
-  </div>`, '', true);
-}
-
-async function saveEditMilestone(projId, msId){
-  const p=projects.find(x=>x.id===projId); if(!p) return;
-  const _isDone=document.getElementById('em-done').value==='true';
-  const _compMs=document.getElementById('em-comp')?.value||'';
-  const _today2=new Date().toISOString().split('T')[0];
-  const milestones=(p.milestones||[]).map(m=>m.id===msId?{...m,name:document.getElementById('em-name').value,date:document.getElementById('em-date').value,done:_isDone,completed_date:_isDone?(_compMs||_today2):m.completed_date}:m);
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({milestones})});
-  p.milestones=milestones; showToast('Milestone updated.'); openProjectDetail(projId);
-}
-
-async function deleteMilestone(projId, msId){
-  const p=projects.find(x=>x.id===projId); if(!p) return;
-  if(!confirm('Delete this milestone?')) return;
-  const milestones=(p.milestones||[]).filter(m=>m.id!==msId);
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({milestones})});
-  p.milestones=milestones; showToast('Milestone deleted.'); openProjectDetail(projId);
-}
-
-function openNewTask(){
-  if(!canEdit) return;
-  openModal(`
-  <div class="modal-header"><div><div class="modal-title">New Task</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
-  <div class="modal-body">
-    <div class="form-group"><label class="form-label">Task Name *</label><input class="form-input" id="nt-name" placeholder="What needs to be done?"/></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Project</label><select class="form-select" id="nt-proj">${projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="nt-owner" placeholder="Name or initials"/></div></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="nt-due" type="date"/></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="nt-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div></div>
-  </div>
-  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveNewTask()"><i class="ti ti-check"></i> Add Task</button></div>`);
-}
-
-async function saveNewTask(){
-  const name=document.getElementById('nt-name').value.trim();
-  const projId=document.getElementById('nt-proj').value;
-  if(!name||!projId){showToast('Name and project required.','error');return;}
-  await addTaskToProject(projId,{id:'t'+Date.now(),name,done:false,due:document.getElementById('nt-due').value,owner:document.getElementById('nt-owner').value,priority:document.getElementById('nt-pri').value});
-  closeModal(); showToast('Task added.');
-}
-
-function openAddTask(projId){
+function openAddTask(projId, msId){
   closeModal();
   setTimeout(()=>openModal(`
   <div class="modal-header"><div><div class="modal-title">Add Task</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
@@ -1064,66 +1109,112 @@ function openAddTask(projId){
     <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="at-owner"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="at-due" type="date"/></div></div>
     <div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="at-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAddTask('${projId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAddTask('${projId}','${msId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
 }
 
-async function saveAddTask(projId){
+async function saveAddTask(projId, msId){
   const name=document.getElementById('at-name').value.trim();
   if(!name){showToast('Name required.','error');return;}
-  await addTaskToProject(projId,{id:'t'+Date.now(),name,done:false,due:document.getElementById('at-due').value,owner:document.getElementById('at-owner').value,priority:document.getElementById('at-pri').value});
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  ms.tasks=[...(ms.tasks||[]),{id:'t'+Date.now(),name,status:'not_started',due:document.getElementById('at-due').value,owner:document.getElementById('at-owner').value,priority:document.getElementById('at-pri').value}];
+  await recalcAndSave(p);
   closeModal(); showToast('Task added.'); openProjectDetail(projId);
 }
 
-async function addTaskToProject(projId,task){
-  const p=projects.find(x=>x.id===projId); if(!p) return;
-  const tasks=[...(p.tasks||[]),task];
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({tasks})});
-  p.tasks=tasks; renderView(currentView);
-}
-
-async function toggleTask(projId,taskId){
+// Global new task (from top nav button) — requires milestone selection
+function openNewTask(){
   if(!canEdit) return;
+  const projsWithMs=projects.filter(p=>(p.milestones||[]).length>0);
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">New Task</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Task Name *</label><input class="form-input" id="nt-name" placeholder="What needs to be done?"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Project</label><select class="form-select" id="nt-proj" onchange="updateNtMilestones()">${projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div><div class="form-group"><label class="form-label">Milestone</label><select class="form-select" id="nt-ms">${projects[0]?(projects[0].milestones||[]).map(m=>`<option value="${m.id}">${m.name}</option>`).join('')||'<option value="">No milestones</option>':'<option value="">Select project first</option>'}</select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="nt-owner" placeholder="Name or initials"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="nt-due" type="date"/></div></div>
+    <div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="nt-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveNewTask()"><i class="ti ti-check"></i> Add Task</button></div>`);
+}
+function updateNtMilestones(){
+  const projId=document.getElementById('nt-proj')?.value;
+  const p=projects.find(x=>x.id===projId);
+  const sel=document.getElementById('nt-ms');
+  if(!sel) return;
+  sel.innerHTML=(p?.milestones||[]).map(m=>`<option value="${m.id}">${m.name}</option>`).join('')||'<option value="">No milestones — add one first</option>';
+}
+async function saveNewTask(){
+  const name=document.getElementById('nt-name').value.trim();
+  const projId=document.getElementById('nt-proj').value;
+  const msId=document.getElementById('nt-ms').value;
+  if(!name||!projId||!msId){showToast('Name, project and milestone required.','error');return;}
   const p=projects.find(x=>x.id===projId); if(!p) return;
-  const _today=new Date().toISOString().split('T')[0];
-  const tasks=(p.tasks||[]).map(t=>{
-    if(t.id!==taskId) return t;
-    const nowDone=!t.done;
-    return {...t,done:nowDone,completed_date:nowDone?(t.completed_date||_today):t.completed_date};
-  });
-  const pct=tasks.length>0?Math.round(tasks.filter(t=>t.done).length/tasks.length*100):0;
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({tasks,progress:pct})});
-  p.tasks=tasks; p.progress=pct;
-  // Refresh modal if open, otherwise refresh view
-  const modalOpen=document.getElementById('modal-overlay').style.display!=='none';
-  if(modalOpen) openProjectDetail(projId);
-  else renderView(currentView);
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms){showToast('Select a valid milestone.','error');return;}
+  ms.tasks=[...(ms.tasks||[]),{id:'t'+Date.now(),name,status:'not_started',due:document.getElementById('nt-due').value,owner:document.getElementById('nt-owner').value,priority:document.getElementById('nt-pri').value}];
+  await recalcAndSave(p);
+  closeModal(); showToast('Task added.');
 }
 
-function openAddMilestone(projId){
+// ── Blocker management (tied to task or milestone) ────
+function openAddTaskBlocker(projId, msId, taskId){
   closeModal();
   setTimeout(()=>openModal(`
-  <div class="modal-header"><div><div class="modal-title">Add Milestone</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-header"><div><div class="modal-title">Add Blocker</div><div class="modal-subtitle">Will set task status to Blocked</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
-    <div class="form-group"><label class="form-label">Milestone Name *</label><input class="form-input" id="am-name" placeholder="e.g. Phase 1 complete"/></div>
-    <div class="form-group"><label class="form-label">Target Date *</label><input class="form-input" id="am-date" type="date"/></div>
+    <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="ab-title" placeholder="What is blocked?"/></div>
+    <div class="form-group"><label class="form-label">Detail</label><textarea class="form-textarea" id="ab-desc"></textarea></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner / Resolver</label><input class="form-input" id="ab-owner"/></div><div class="form-group"><label class="form-label">Date Raised</label><input class="form-input" id="ab-date" type="date" value="${new Date().toISOString().split('T')[0]}"/></div></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAddMilestone('${projId}')"><i class="ti ti-check"></i> Add</button></div>`, '', true),150);
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveTaskBlocker('${projId}','${msId}','${taskId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
 }
-
-async function saveAddMilestone(projId){
-  const name=document.getElementById('am-name').value.trim();
-  const date=document.getElementById('am-date').value;
-  if(!name||!date){showToast('Name and date required.','error');return;}
+async function saveTaskBlocker(projId, msId, taskId){
+  const title=document.getElementById('ab-title').value.trim();
+  if(!title){showToast('Title required.','error');return;}
   const p=projects.find(x=>x.id===projId); if(!p) return;
-  const milestones=[...(p.milestones||[]),{id:'m'+Date.now(),name,date,done:false}];
-  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({milestones})});
-  p.milestones=milestones; closeModal(); showToast('Milestone added.'); openProjectDetail(projId);
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  ms.tasks=(ms.tasks||[]).map(t=>t.id===taskId?{...t,status:'blocked',blocker:{id:'b'+Date.now(),title,desc:document.getElementById('ab-desc').value,owner:document.getElementById('ab-owner').value,raised:document.getElementById('ab-date').value}}:t);
+  await recalcAndSave(p);
+  updateBadges(); closeModal(); showToast('Blocker added. Task set to Blocked.'); openProjectDetail(projId);
+}
+async function resolveTaskBlocker(projId, msId, taskId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  ms.tasks=(ms.tasks||[]).map(t=>t.id===taskId?{...t,status:'on_track',blocker:null}:t);
+  await recalcAndSave(p);
+  updateBadges(); showToast('Blocker resolved.'); openProjectDetail(projId);
 }
 
+function openAddMsBlocker(projId, msId){
+  closeModal();
+  setTimeout(()=>openModal(`
+  <div class="modal-header"><div><div class="modal-title">Add Milestone Blocker</div><div class="modal-subtitle">Will set milestone status to Blocked</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="ab-title" placeholder="What is blocked?"/></div>
+    <div class="form-group"><label class="form-label">Detail</label><textarea class="form-textarea" id="ab-desc"></textarea></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner / Resolver</label><input class="form-input" id="ab-owner"/></div><div class="form-group"><label class="form-label">Date Raised</label><input class="form-input" id="ab-date" type="date" value="${new Date().toISOString().split('T')[0]}"/></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveMsBlocker('${projId}','${msId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
+}
+async function saveMsBlocker(projId, msId){
+  const title=document.getElementById('ab-title').value.trim();
+  if(!title){showToast('Title required.','error');return;}
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  p.milestones=(p.milestones||[]).map(m=>m.id===msId?{...m,status:'blocked',blocker:{id:'b'+Date.now(),title,desc:document.getElementById('ab-desc').value,owner:document.getElementById('ab-owner').value,raised:document.getElementById('ab-date').value}}:m);
+  await recalcAndSave(p);
+  updateBadges(); closeModal(); showToast('Blocker added. Milestone set to Blocked.'); openProjectDetail(projId);
+}
+async function resolveMsBlocker(projId, msId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  p.milestones=(p.milestones||[]).map(m=>m.id===msId?{...m,status:'on_track',blocker:null}:m);
+  await recalcAndSave(p);
+  updateBadges(); showToast('Blocker resolved.'); openProjectDetail(projId);
+}
+
+// Legacy project-level blocker (keep for backward compat from blockers view)
 function openAddBlocker(projId){
   closeModal();
   setTimeout(()=>openModal(`
-  <div class="modal-header"><div><div class="modal-title">Add Blocker</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-header"><div><div class="modal-title">Add Project Blocker</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
     <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="ab-title" placeholder="What is blocked?"/></div>
     <div class="form-group"><label class="form-label">Detail</label><textarea class="form-textarea" id="ab-desc"></textarea></div>
@@ -1131,7 +1222,6 @@ function openAddBlocker(projId){
   </div>
   <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAddBlocker('${projId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
 }
-
 async function saveAddBlocker(projId){
   const title=document.getElementById('ab-title').value.trim();
   if(!title){showToast('Title required.','error');return;}
@@ -1140,12 +1230,139 @@ async function saveAddBlocker(projId){
   await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({blockers})});
   p.blockers=blockers; updateBadges(); closeModal(); showToast('Blocker added.'); openProjectDetail(projId);
 }
-
 async function resolveBlocker(projId,blockerId){
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const blockers=(p.blockers||[]).filter(b=>b.id!==blockerId);
   await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({blockers})});
   p.blockers=blockers; updateBadges(); showToast('Blocker resolved.'); renderView(currentView);
+}
+
+// ── Milestone CRUD ────────────────────────────────────
+// State for expanded milestones in project detail
+const expandedMs={};
+function toggleMs(msId){
+  expandedMs[msId]=!expandedMs[msId];
+  // Re-render milestone section only
+  const el=document.getElementById('ms-section');
+  if(el){const p=projects.find(x=>x.id===el.dataset.pid); if(p) el.innerHTML=renderMsSection(p);}
+}
+
+function openEditMilestone(projId, msId){
+  if(!canEdit) return;
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const m=p.milestones?.find(x=>x.id===msId); if(!m) return;
+  const statusOpts=TASK_STATUSES.map(s=>`<option value="${s}" ${m.status===s?'selected':''}>${statusLabel2(s)}</option>`).join('');
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Edit Milestone</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Milestone Name</label><input class="form-input" id="em-name" value="${m.name}"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="em-owner" value="${m.owner||''}"/></div><div class="form-group"><label class="form-label">Target Date</label><input class="form-input" id="em-date" type="date" value="${m.date||''}"/></div></div>
+    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="em-status">${statusOpts}</select></div>
+    ${m.blocker?`<div class="form-group"><label class="form-label" style="color:var(--red)">Active Blocker</label><div style="background:var(--red-bg);border:1px solid rgba(200,22,29,0.3);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--red)">${m.blocker.title}</div><button class="btn btn-ghost" style="margin-top:6px;font-size:11px" onclick="resolveMsBlocker('${projId}','${msId}')"><i class="ti ti-check"></i> Resolve blocker</button></div>`:''}
+    ${canEdit&&!m.blocker?`<button class="btn btn-ghost" style="font-size:11px;color:var(--red)" onclick="openAddMsBlocker('${projId}','${msId}')"><i class="ti ti-alert-triangle"></i> Add Blocker</button>`:''}
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" onclick="deleteMilestone('${projId}','${msId}')"><i class="ti ti-trash"></i> Delete</button>
+    <button class="btn btn-ghost" onclick="openProjectDetail('${projId}')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEditMilestone('${projId}','${msId}')"><i class="ti ti-check"></i> Save</button>
+  </div>`,'',true);
+}
+
+async function saveEditMilestone(projId, msId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const newStatus=document.getElementById('em-status').value;
+  p.milestones=(p.milestones||[]).map(m=>m.id===msId?{...m,
+    name:document.getElementById('em-name').value,
+    owner:document.getElementById('em-owner').value,
+    date:document.getElementById('em-date').value,
+    status:newStatus,
+    done:newStatus==='completed'
+  }:m);
+  await recalcAndSave(p);
+  showToast('Milestone updated.'); openProjectDetail(projId);
+}
+
+async function deleteMilestone(projId, msId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  if(!confirm('Delete this milestone and all its tasks?')) return;
+  p.milestones=(p.milestones||[]).filter(m=>m.id!==msId);
+  await recalcAndSave(p);
+  showToast('Milestone deleted.'); openProjectDetail(projId);
+}
+
+function openAddMilestone(projId){
+  closeModal();
+  setTimeout(()=>openModal(`
+  <div class="modal-header"><div><div class="modal-title">Add Milestone</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Milestone Name *</label><input class="form-input" id="am-name" placeholder="e.g. Phase 1 complete"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="am-owner" placeholder="Name or initials"/></div><div class="form-group"><label class="form-label">Target Date *</label><input class="form-input" id="am-date" type="date"/></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAddMilestone('${projId}')"><i class="ti ti-check"></i> Add</button></div>`,'',true),150);
+}
+
+async function saveAddMilestone(projId){
+  const name=document.getElementById('am-name').value.trim();
+  const date=document.getElementById('am-date').value;
+  if(!name||!date){showToast('Name and date required.','error');return;}
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const milestones=[...(p.milestones||[]),{id:'m'+Date.now(),name,date,owner:document.getElementById('am-owner').value||'',status:'not_started',done:false,tasks:[]}];
+  p.milestones=milestones;
+  await recalcAndSave(p);
+  closeModal(); showToast('Milestone added.'); openProjectDetail(projId);
+}
+
+// ── Milestone section renderer (used in project detail) ─
+function renderMsSection(p){
+  const ms=p.milestones||[];
+  if(ms.length===0) return`<div style="font-size:12px;color:var(--text3);padding:8px 0">No milestones yet.${canEdit?` <button class="btn btn-ghost" style="font-size:11px;margin-top:8px" onclick="openAddMilestone('${p.id}')"><i class="ti ti-plus"></i> Add milestone</button>`:''}</div>`;
+
+  const statusColorMap={not_started:'#9CA3AF',on_track:'var(--green)',at_risk:'var(--amber)',blocked:'var(--red)',completed:'var(--green)'};
+
+  return ms.map(m=>{
+    const isOpen=expandedMs[m.id]!==false; // default open
+    const mPct=calcMilestoneProgress(m);
+    const tasks=m.tasks||[];
+    const statusColor=statusColorMap[m.status||'not_started'];
+    const msClass=msRowClass(m);
+    return`<div class="${msClass}" id="ms-${m.id}">
+      <div class="ms-header" onclick="toggleMs('${m.id}')">
+        <i class="ti ti-chevron-right chevron-icon ${isOpen?'open':''}"></i>
+        <span class="status-dot" style="background:${statusColor}"></span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px">
+            ${m.name}
+            ${m.status==='blocked'?`<span class="badge badge-red" style="font-size:9px">BLOCKED</span>`:''}
+            ${m.status==='completed'?`<span class="badge badge-green" style="font-size:9px">DONE</span>`:''}
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${m.owner?`Owner: ${m.owner} &bull; `:''}${m.date||'No date'} &bull; ${tasks.length} task${tasks.length!==1?'s':''} &bull; ${mPct}% complete</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()">
+          <div style="width:60px"><div class="progress-bar" style="height:5px"><div class="progress-fill ${m.status==='completed'?'green':m.status==='blocked'?'':''}" style="width:${mPct}%;background:${m.status==='blocked'?'var(--red)':m.status==='completed'?'var(--green)':'var(--blue)'}"></div></div></div>
+          ${canEdit?`<button class="icon-btn" style="width:22px;height:22px" onclick="openEditMilestone('${p.id}','${m.id}')"><i class="ti ti-edit" style="font-size:12px"></i></button>`:''}
+        </div>
+      </div>
+      ${isOpen?`
+      ${m.blocker?`<div style="margin:0 12px 8px;background:var(--red-bg);border:1px solid rgba(200,22,29,0.3);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--red)"><i class="ti ti-alert-triangle"></i> <strong>${m.blocker.title}</strong> — ${m.blocker.desc||''} ${canEdit?`<button class="btn btn-ghost" style="font-size:10px;padding:2px 8px;margin-left:6px" onclick="resolveMsBlocker('${p.id}','${m.id}')">Resolve</button>`:''}</div>`:''}
+      <div class="ms-tasks">
+        ${tasks.length===0?`<div style="font-size:11px;color:var(--text3);padding:4px 0">No tasks — ${canEdit?`<span style="cursor:pointer;color:var(--blue);text-decoration:underline" onclick="openAddTask('${p.id}','${m.id}')">add one</span>`:'none yet'}.</div>`:tasks.map(t=>{
+          const tClass=taskRowClass(t);
+          const tColor=statusColorMap[t.status||'not_started'];
+          return`<div class="${tClass}">
+            <span class="status-dot" style="background:${tColor}"></span>
+            <div class="task-name" style="color:${t.status==='completed'?'var(--text3)':'var(--text)'}${t.status==='completed'?';text-decoration:line-through':''}">${t.name}</div>
+            ${t.blocker?`<span class="badge badge-red" style="font-size:9px;flex-shrink:0">BLOCKED</span>`:''}
+            ${priBadge(t.priority)}
+            <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;flex-shrink:0;min-width:60px;text-align:right">${t.owner||''}</div>
+            <div style="font-size:10px;color:${isOverdue(t.due)&&t.status!=='completed'?'var(--red)':'var(--text3)'};font-family:'DM Mono',monospace;flex-shrink:0;min-width:70px;text-align:right">${t.due||''}</div>
+            ${canEdit?`<button class="icon-btn" style="width:22px;height:22px;flex-shrink:0" onclick="openEditTask('${p.id}','${m.id}','${t.id}')"><i class="ti ti-edit" style="font-size:12px"></i></button>`:''}
+          </div>`;
+        }).join('')}
+        ${canEdit?`<button class="btn btn-ghost" style="margin-top:6px;font-size:11px;width:100%;justify-content:center" onclick="openAddTask('${p.id}','${m.id}')"><i class="ti ti-plus"></i> Add Task</button>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('')+
+  (canEdit?`<button class="btn btn-ghost" style="margin-top:8px;font-size:11px;width:100%;justify-content:center" onclick="openAddMilestone('${p.id}')"><i class="ti ti-plus"></i> Add Milestone</button>`:'');
 }
 
 function openEditKPI(kpiId,currentVal){
