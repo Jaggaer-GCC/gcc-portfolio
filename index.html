@@ -98,6 +98,19 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--content-
 .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .filter-btn{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .12s;font-family:'DM Sans',sans-serif}
 .filter-btn:hover,.filter-btn.active{background:rgba(200,22,29,0.08);border-color:rgba(200,22,29,0.3);color:#C8161D}
+.filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px}
+.filter-bar label{font-size:11px;font-weight:500;color:var(--text3);white-space:nowrap}
+.filter-input{padding:4px 9px;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text);background:var(--surface2);font-family:'DM Sans',sans-serif;min-width:0}
+.filter-input:focus{outline:none;border-color:var(--blue)}
+.sort-select{padding:4px 9px;border:1px solid var(--border);border-radius:6px;font-size:11px;color:var(--text);background:var(--surface2);font-family:'DM Sans',sans-serif;cursor:pointer}
+.sort-select:focus{outline:none;border-color:var(--blue)}
+.filter-divider{width:1px;height:18px;background:var(--border);flex-shrink:0}
+.filter-clear{font-size:10px;color:var(--text3);cursor:pointer;text-decoration:underline;white-space:nowrap;background:none;border:none;font-family:'DM Sans',sans-serif;padding:0}
+.filter-clear:hover{color:var(--red)}
+.type-chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.type-chip{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .12s;font-family:'DM Sans',sans-serif;user-select:none}
+.type-chip:hover{background:var(--surface2)}
+.type-chip.active{background:rgba(200,22,29,0.08);border-color:rgba(200,22,29,0.3);color:#C8161D}
 .data-table{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-lg);overflow:hidden}
 .table-head{display:grid;padding:9px 16px;background:#F9FAFB;border-bottom:1px solid var(--card-border)}
 .th{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
@@ -393,7 +406,12 @@ const KPI_DEFAULTS = {sla:88,fcr:64,csat:3.9,deflect:18,ttr:61,esc:8};
 let currentUser=null, userProfile=null, canEdit=false;
 let projects=[], kpiValues={...KPI_DEFAULTS};
 let currentView='dashboard', filterProjects='All', filterTasks='open';
+let filterProjTypes=[], sortProjects='name'; // multi-type filter for projects
+let taskFilters={owner:'',project:'',dateFrom:'',dateTo:'',sort:'priority'};
+let msFilters={owner:'',project:'',dateFrom:'',dateTo:'',sort:'date'};
 let toastTimer=null;
+const debounceTimers={};
+function debounce(key, fn, ms=300){ clearTimeout(debounceTimers[key]); debounceTimers[key]=setTimeout(fn,ms); }
 
 // ── Auth ──────────────────────────────────────────────
 async function handleLogin(){
@@ -665,7 +683,7 @@ const ragDot=r=>`<span class="rag ${r==='G'?'rag-g':r==='A'?'rag-a':'rag-r'}"></
 const statusLabel=p=>p.status==='Completed'?'Completed':p.status==='Planning'?'Planning':p.rag==='G'?'On Track':p.rag==='A'?'At Risk':'Off Track';
 const statusBadge=p=>`<span class="badge ${p.status==='Completed'?'badge-green':p.status==='Planning'?'badge-purple':ragCls(p.rag)}">${statusLabel(p)}</span>`;
 const typeColors={Strategic:'badge-blue',Operational:'badge-teal',Process:'badge-gray',Transformation:'badge-red',Workforce:'badge-purple',Quality:'badge-green',Revenue:'badge-purple'};
-const typeBadge=t=>`<span class="badge ${typeColors[t]||'badge-gray'}">${t}</span>`;
+const typeBadge=t=>{const arr=Array.isArray(t)?t:[t];return arr.filter(Boolean).map(v=>`<span class="badge ${typeColors[v]||'badge-gray'}">${v}</span>`).join(' ');};
 const priBadge=p=>p==='P1'?`<span class="badge badge-red">${p}</span>`:`<span class="badge badge-gray">${p}</span>`;
 const isOverdue=d=>d&&new Date(d)<new Date();
 const daysUntil=d=>Math.ceil((new Date(d)-new Date())/86400000);
@@ -704,12 +722,47 @@ async function renderDashboard(){
 
 // ── Projects ──────────────────────────────────────────
 async function renderProjects(){
-  const types=['All','Strategic','Operational','Process','Transformation','Workforce','Quality','Revenue'];
-  const filtered=filterProjects==='All'?projects:projects.filter(p=>p.type===filterProjects);
+  const types=['Strategic','Operational','Process','Transformation','Workforce','Quality','Revenue'];
+  // Multi-type filter
+  let filtered=filterProjTypes.length===0?projects:projects.filter(p=>{
+    const pt=Array.isArray(p.type)?p.type:[p.type];
+    return filterProjTypes.some(t=>pt.includes(t));
+  });
+  // Sort
+  filtered=[...filtered].sort((a,b)=>{
+    if(sortProjects==='name') return a.name.localeCompare(b.name);
+    if(sortProjects==='due') return new Date(a.due||'9999')-new Date(b.due||'9999');
+    if(sortProjects==='priority') return (a.priority||'P3').localeCompare(b.priority||'P3');
+    if(sortProjects==='progress_asc') return (a.progress||0)-(b.progress||0);
+    if(sortProjects==='progress_desc') return (b.progress||0)-(a.progress||0);
+    if(sortProjects==='rag') return (a.rag||'G').localeCompare(b.rag||'G');
+    return 0;
+  });
+  const activeCount=filterProjTypes.length;
   return`
-  <div class="filters">${types.map(t=>`<button class="filter-btn ${filterProjects===t?'active':''}" onclick="filterProjects='${t}';renderView('projects')">${t}</button>`).join('')}</div>
-  <div class="section-header"><div class="section-title">${filtered.length} Project${filtered.length!==1?'s':''}</div>${canEdit?`<button class="btn btn-primary" onclick="openNewProject()"><i class="ti ti-plus"></i> New Project</button>`:''}</div>
+  <div class="type-chips">
+    ${types.map(t=>`<button class="type-chip ${filterProjTypes.includes(t)?'active':''}" onclick="toggleProjType('${t}')">${t}</button>`).join('')}
+    ${activeCount>0?`<button class="filter-clear" onclick="filterProjTypes=[];renderView('projects')">Clear (${activeCount})</button>`:''}
+  </div>
+  <div class="filter-bar">
+    <label>Sort by</label>
+    <select class="sort-select" onchange="sortProjects=this.value;renderView('projects')">
+      <option value="name" ${sortProjects==='name'?'selected':''}>Name A–Z</option>
+      <option value="due" ${sortProjects==='due'?'selected':''}>Due Date</option>
+      <option value="priority" ${sortProjects==='priority'?'selected':''}>Priority</option>
+      <option value="progress_asc" ${sortProjects==='progress_asc'?'selected':''}>Progress (low–high)</option>
+      <option value="progress_desc" ${sortProjects==='progress_desc'?'selected':''}>Progress (high–low)</option>
+      <option value="rag" ${sortProjects==='rag'?'selected':''}>RAG Status</option>
+    </select>
+  </div>
+  <div class="section-header"><div class="section-title">${filtered.length} of ${projects.length} Project${projects.length!==1?'s':''}</div>${canEdit?`<button class="btn btn-primary" onclick="openNewProject()"><i class="ti ti-plus"></i> New Project</button>`:''}</div>
   ${renderProjectTable(filtered)}`;
+}
+
+function toggleProjType(t){
+  const idx=filterProjTypes.indexOf(t);
+  if(idx>-1) filterProjTypes.splice(idx,1); else filterProjTypes.push(t);
+  renderView('projects');
 }
 
 function renderProjectTable(list){
@@ -795,8 +848,25 @@ function openProjectDetail(id){
 async function renderAllTasks(){
   const all=projects.flatMap(p=>(p.milestones||[]).flatMap(m=>(m.tasks||[]).map(t=>({...t,pn:p.name,pid:p.id,msName:m.name,msId:m.id}))));
   const open=all.filter(t=>t.status!=='completed'),done=all.filter(t=>t.status==='completed');
-  const shown=filterTasks==='open'?open:done;
+  let shown=filterTasks==='open'?open:done;
+  // Apply filters
+  if(taskFilters.owner) shown=shown.filter(t=>(t.owner||'').toLowerCase().includes(taskFilters.owner.toLowerCase()));
+  if(taskFilters.project) shown=shown.filter(t=>t.pid===taskFilters.project);
+  if(taskFilters.dateFrom) shown=shown.filter(t=>t.due&&t.due>=taskFilters.dateFrom);
+  if(taskFilters.dateTo) shown=shown.filter(t=>t.due&&t.due<=taskFilters.dateTo);
+  // Sort
+  shown=[...shown].sort((a,b)=>{
+    if(taskFilters.sort==='priority') return (a.priority||'P3').localeCompare(b.priority||'P3');
+    if(taskFilters.sort==='due_asc') return new Date(a.due||'9999')-new Date(b.due||'9999');
+    if(taskFilters.sort==='due_desc') return new Date(b.due||'9999')-new Date(a.due||'9999');
+    if(taskFilters.sort==='owner') return (a.owner||'').localeCompare(b.owner||'');
+    if(taskFilters.sort==='name') return a.name.localeCompare(b.name);
+    if(taskFilters.sort==='status') return (a.status||'').localeCompare(b.status||'');
+    return 0;
+  });
   const statusColorMap={not_started:'#9CA3AF',on_track:'var(--green)',at_risk:'var(--amber)',blocked:'var(--red)',completed:'var(--green)'};
+  const projOpts=projects.map(p=>`<option value="${p.id}" ${taskFilters.project===p.id?'selected':''}>${p.name}</option>`).join('');
+  const hasFilters=taskFilters.owner||taskFilters.project||taskFilters.dateFrom||taskFilters.dateTo;
   return`
   <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
     <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${all.length}</div></div>
@@ -807,15 +877,40 @@ async function renderAllTasks(){
     <button class="tab ${filterTasks==='open'?'active':''}" onclick="filterTasks='open';renderView('tasks')">Open (${open.length})</button>
     <button class="tab ${filterTasks==='done'?'active':''}" onclick="filterTasks='done';renderView('tasks')">Completed (${done.length})</button>
   </div>
+  <div class="filter-bar">
+    <label>Owner</label>
+    <input class="filter-input" style="width:110px" placeholder="Filter by owner" value="${taskFilters.owner}" oninput="taskFilters.owner=this.value;debounce('taskOwner',()=>renderView('tasks'))"/>
+    <div class="filter-divider"></div>
+    <label>Project</label>
+    <select class="sort-select" onchange="taskFilters.project=this.value;renderView('tasks')">
+      <option value="">All projects</option>${projOpts}
+    </select>
+    <div class="filter-divider"></div>
+    <label>Due from</label>
+    <input class="filter-input" type="date" value="${taskFilters.dateFrom}" onchange="taskFilters.dateFrom=this.value;renderView('tasks')"/>
+    <label>to</label>
+    <input class="filter-input" type="date" value="${taskFilters.dateTo}" onchange="taskFilters.dateTo=this.value;renderView('tasks')"/>
+    <div class="filter-divider"></div>
+    <label>Sort</label>
+    <select class="sort-select" onchange="taskFilters.sort=this.value;renderView('tasks')">
+      <option value="priority" ${taskFilters.sort==='priority'?'selected':''}>Priority</option>
+      <option value="due_asc" ${taskFilters.sort==='due_asc'?'selected':''}>Due (earliest)</option>
+      <option value="due_desc" ${taskFilters.sort==='due_desc'?'selected':''}>Due (latest)</option>
+      <option value="owner" ${taskFilters.sort==='owner'?'selected':''}>Owner A–Z</option>
+      <option value="name" ${taskFilters.sort==='name'?'selected':''}>Name A–Z</option>
+      <option value="status" ${taskFilters.sort==='status'?'selected':''}>Status</option>
+    </select>
+    ${hasFilters?`<button class="filter-clear" onclick="taskFilters={owner:'',project:'',dateFrom:'',dateTo:'',sort:'priority'};renderView('tasks')">Clear filters</button>`:''}
+  </div>
   <div class="panel">
-    ${shown.length===0?`<div class="empty-state"><i class="ti ti-checklist"></i><div class="empty-state-title">No tasks here</div></div>`:
-    shown.sort((a,b)=>(a.priority||'').localeCompare(b.priority||'')).map(t=>`
+    ${shown.length===0?`<div class="empty-state"><i class="ti ti-checklist"></i><div class="empty-state-title">No tasks match filters</div></div>`:
+    shown.map(t=>`
     <div class="task-item">
       <span class="status-dot" style="background:${statusColorMap[t.status||'not_started']}"></span>
-      <div style="flex:1;min-width:0"><div class="task-name" style="${t.status==='completed'?'text-decoration:line-through;color:var(--text3)':''}">${t.name}</div><div style="font-size:10px;color:var(--text3);margin-top:1px">${t.pn} &rsaquo; ${t.msName} &bull; ${t.owner||''}</div></div>
+      <div style="flex:1;min-width:0"><div class="task-name" style="${t.status==='completed'?'text-decoration:line-through;color:var(--text3)':''}">${t.name}</div><div style="font-size:10px;color:var(--text3);margin-top:1px">${t.pn} &rsaquo; ${t.msName} &bull; ${t.owner||'No owner'}</div></div>
       ${t.blocker?`<span class="badge badge-red" style="font-size:9px">BLOCKED</span>`:''}
       ${priBadge(t.priority)}
-      <div class="task-due" style="color:${isOverdue(t.due)&&t.status!=='completed'?'var(--red)':'var(--text3)'}">${t.due||''}</div>
+      <div class="task-due" style="color:${isOverdue(t.due)&&t.status!=='completed'?'var(--red)':'var(--text3)'}">${t.due||'—'}</div>
     </div>`).join('')}
   </div>`;
 }
@@ -823,20 +918,80 @@ async function renderAllTasks(){
 // ── Milestones ────────────────────────────────────────
 async function renderMilestones(){
   const all=projects.flatMap(p=>(p.milestones||[]).map(m=>({...m,pn:p.name,pid:p.id,taskCount:(m.tasks||[]).length,doneCount:(m.tasks||[]).filter(t=>t.status==='completed').length})));
-  const up=all.filter(m=>m.status!=='completed').sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const active=all.filter(m=>m.status!=='completed');
   const done=all.filter(m=>m.status==='completed');
   const blocked=all.filter(m=>m.status==='blocked');
+  // Apply filters to active panel
+  let shownActive=[...active];
+  let shownDone=[...done];
+  if(msFilters.owner){
+    shownActive=shownActive.filter(m=>(m.owner||'').toLowerCase().includes(msFilters.owner.toLowerCase()));
+    shownDone=shownDone.filter(m=>(m.owner||'').toLowerCase().includes(msFilters.owner.toLowerCase()));
+  }
+  if(msFilters.project){
+    shownActive=shownActive.filter(m=>m.pid===msFilters.project);
+    shownDone=shownDone.filter(m=>m.pid===msFilters.project);
+  }
+  if(msFilters.dateFrom){
+    shownActive=shownActive.filter(m=>m.date&&m.date>=msFilters.dateFrom);
+    shownDone=shownDone.filter(m=>m.date&&m.date>=msFilters.dateFrom);
+  }
+  if(msFilters.dateTo){
+    shownActive=shownActive.filter(m=>m.date&&m.date<=msFilters.dateTo);
+    shownDone=shownDone.filter(m=>m.date&&m.date<=msFilters.dateTo);
+  }
+  // Sort
+  const sortMs=(arr)=>[...arr].sort((a,b)=>{
+    if(msFilters.sort==='date') return new Date(a.date||'9999')-new Date(b.date||'9999');
+    if(msFilters.sort==='date_desc') return new Date(b.date||'9999')-new Date(a.date||'9999');
+    if(msFilters.sort==='name') return a.name.localeCompare(b.name);
+    if(msFilters.sort==='owner') return (a.owner||'').localeCompare(b.owner||'');
+    if(msFilters.sort==='progress_asc') return (a.doneCount/Math.max(a.taskCount,1))-(b.doneCount/Math.max(b.taskCount,1));
+    if(msFilters.sort==='progress_desc') return (b.doneCount/Math.max(b.taskCount,1))-(a.doneCount/Math.max(a.taskCount,1));
+    if(msFilters.sort==='status') return (a.status||'').localeCompare(b.status||'');
+    return 0;
+  });
+  shownActive=sortMs(shownActive);
+  shownDone=sortMs(shownDone);
   const statusColorMap={not_started:'#9CA3AF',on_track:'var(--green)',at_risk:'var(--amber)',blocked:'var(--red)',completed:'var(--green)'};
+  const projOpts=projects.map(p=>`<option value="${p.id}" ${msFilters.project===p.id?'selected':''}>${p.name}</option>`).join('');
+  const hasFilters=msFilters.owner||msFilters.project||msFilters.dateFrom||msFilters.dateTo;
   return`
   <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${all.length}</div></div>
-    <div class="stat-card"><div class="stat-label">In Progress</div><div class="stat-value" style="color:var(--blue)">${up.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Active</div><div class="stat-value" style="color:var(--blue)">${active.length}</div></div>
     <div class="stat-card"><div class="stat-label">Blocked</div><div class="stat-value" style="color:var(--red)">${blocked.length}</div></div>
     <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" style="color:var(--green)">${done.length}</div></div>
   </div>
+  <div class="filter-bar">
+    <label>Owner</label>
+    <input class="filter-input" style="width:110px" placeholder="Filter by owner" value="${msFilters.owner}" oninput="msFilters.owner=this.value;debounce('msOwner',()=>renderView('milestones'))"/>
+    <div class="filter-divider"></div>
+    <label>Project</label>
+    <select class="sort-select" onchange="msFilters.project=this.value;renderView('milestones')">
+      <option value="">All projects</option>${projOpts}
+    </select>
+    <div class="filter-divider"></div>
+    <label>Due from</label>
+    <input class="filter-input" type="date" value="${msFilters.dateFrom}" onchange="msFilters.dateFrom=this.value;renderView('milestones')"/>
+    <label>to</label>
+    <input class="filter-input" type="date" value="${msFilters.dateTo}" onchange="msFilters.dateTo=this.value;renderView('milestones')"/>
+    <div class="filter-divider"></div>
+    <label>Sort</label>
+    <select class="sort-select" onchange="msFilters.sort=this.value;renderView('milestones')">
+      <option value="date" ${msFilters.sort==='date'?'selected':''}>Due (earliest)</option>
+      <option value="date_desc" ${msFilters.sort==='date_desc'?'selected':''}>Due (latest)</option>
+      <option value="name" ${msFilters.sort==='name'?'selected':''}>Name A–Z</option>
+      <option value="owner" ${msFilters.sort==='owner'?'selected':''}>Owner A–Z</option>
+      <option value="progress_asc" ${msFilters.sort==='progress_asc'?'selected':''}>Progress (low–high)</option>
+      <option value="progress_desc" ${msFilters.sort==='progress_desc'?'selected':''}>Progress (high–low)</option>
+      <option value="status" ${msFilters.sort==='status'?'selected':''}>Status</option>
+    </select>
+    ${hasFilters?`<button class="filter-clear" onclick="msFilters={owner:'',project:'',dateFrom:'',dateTo:'',sort:'date'};renderView('milestones')">Clear filters</button>`:''}
+  </div>
   <div class="two-col">
-    <div class="panel"><div class="panel-title">Active (${up.length})</div>${up.length===0?'<div style="font-size:12px;color:var(--text3)">None.</div>':up.map(m=>`<div class="ms-item" style="${m.status==='blocked'?'background:var(--red-bg);border:1px solid rgba(200,22,29,0.2)':''}"><div class="ms-dot" style="background:${statusColorMap[m.status||'not_started']}"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text)">${m.name}${m.status==='blocked'?` <span class="badge badge-red" style="font-size:9px">BLOCKED</span>`:''}</div><div style="font-size:10px;color:var(--text3)">${m.pn} &bull; ${m.doneCount}/${m.taskCount} tasks &bull; ${m.owner||'no owner'}</div></div><div style="font-size:10px;color:${isOverdue(m.date)?'var(--red)':'var(--text3)'};font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}</div>
-    <div class="panel"><div class="panel-title">Completed (${done.length})</div>${done.length===0?'<div style="font-size:12px;color:var(--text3)">None yet.</div>':done.map(m=>`<div class="ms-item"><div class="ms-dot" style="background:var(--green)"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text3);text-decoration:line-through">${m.name}</div><div style="font-size:10px;color:var(--text3)">${m.pn}</div></div><div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}</div>
+    <div class="panel"><div class="panel-title">Active (${shownActive.length}${shownActive.length!==active.length?` of ${active.length}`:''})</div>${shownActive.length===0?`<div style="font-size:12px;color:var(--text3)">None match filters.</div>`:shownActive.map(m=>`<div class="ms-item" style="${m.status==='blocked'?'background:var(--red-bg);border:1px solid rgba(200,22,29,0.2);border-radius:6px;padding:6px 8px':''}"><div class="ms-dot" style="background:${statusColorMap[m.status||'not_started']}"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text)">${m.name}${m.status==='blocked'?` <span class="badge badge-red" style="font-size:9px">BLOCKED</span>`:''}</div><div style="font-size:10px;color:var(--text3)">${m.pn} &bull; ${m.doneCount}/${m.taskCount} tasks &bull; ${m.owner||'no owner'}</div></div><div style="font-size:10px;color:${isOverdue(m.date)?'var(--red)':'var(--text3)'};font-family:'DM Mono',monospace">${m.date||'—'}</div></div>`).join('')}</div>
+    <div class="panel"><div class="panel-title">Completed (${shownDone.length}${shownDone.length!==done.length?` of ${done.length}`:''})</div>${shownDone.length===0?`<div style="font-size:12px;color:var(--text3)">None match filters.</div>`:shownDone.map(m=>`<div class="ms-item"><div class="ms-dot" style="background:var(--green)"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text3);text-decoration:line-through">${m.name}</div><div style="font-size:10px;color:var(--text3)">${m.pn} &bull; ${m.owner||'no owner'}</div></div><div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${m.date||'—'}</div></div>`).join('')}</div>
   </div>`;
 }
 
@@ -909,7 +1064,7 @@ function openNewProject(){
   <div class="modal-header"><div><div class="modal-title">New Project</div><div class="modal-subtitle">Add to the GCC portfolio</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
     <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="np-name" placeholder="e.g. APAC Escalation Reduction"/></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="np-type"><option>Strategic</option><option>Operational</option><option>Process</option><option>Transformation</option><option>Workforce</option><option>Quality</option><option>Revenue</option></select></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="np-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Type (select all that apply)</label><div id="np-types-list" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px 14px">${['Strategic','Operational','Process','Transformation','Workforce','Quality','Revenue'].map(t=>`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--text2)"><input type="checkbox" value="${t}" style="accent-color:#C8161D"/>${t}</label>`).join('')}</div></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="np-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="np-owner" placeholder="Initials e.g. JM"/></div><div class="form-group"><label class="form-label">Sponsor</label><input class="form-input" id="np-sponsor" placeholder="Executive sponsor"/></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Region</label><select class="form-select" id="np-region"><option>Global</option><option>US</option><option>EU</option><option>EMEA</option><option>APAC</option><option>LATAM</option></select></div><div class="form-group"><label class="form-label">Business Impact</label><select class="form-select" id="np-impact"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Start Date</label><input class="form-input" id="np-start" type="date"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="np-due" type="date"/></div></div>
@@ -953,7 +1108,8 @@ async function saveNewProject(){
   const name=document.getElementById('np-name').value.trim();
   if(!name){showToast('Project name required.','error');return;}
   const kpis=Array.from(document.querySelectorAll('#np-kpis-list input[type=checkbox]:checked')).map(o=>o.value);
-  const data={name,type:document.getElementById('np-type').value,status:'Planning',rag:document.getElementById('np-rag').value,owner:document.getElementById('np-owner').value||'TBD',region:document.getElementById('np-region').value,priority:document.getElementById('np-pri').value,sponsor:document.getElementById('np-sponsor').value||'TBD',start:document.getElementById('np-start').value||new Date().toISOString().split('T')[0],due:document.getElementById('np-due').value||'',progress:0,description:document.getElementById('np-desc').value,kpis,impact:document.getElementById('np-impact').value,milestones:[],tasks:[],blockers:[],acceptance:document.getElementById('np-accept').value,created_by:userProfile?.name||currentUser?.email};
+  const types=Array.from(document.querySelectorAll('#np-types-list input[type=checkbox]:checked')).map(o=>o.value);
+  const data={name,type:types.length===1?types[0]:types.length>1?types:'',status:'Planning',rag:document.getElementById('np-rag').value,owner:document.getElementById('np-owner').value||'TBD',region:document.getElementById('np-region').value,priority:document.getElementById('np-pri').value,sponsor:document.getElementById('np-sponsor').value||'TBD',start:document.getElementById('np-start').value||new Date().toISOString().split('T')[0],due:document.getElementById('np-due').value||'',progress:0,description:document.getElementById('np-desc').value,kpis,impact:document.getElementById('np-impact').value,milestones:[],tasks:[],blockers:[],acceptance:document.getElementById('np-accept').value,created_by:userProfile?.name||currentUser?.email};
   const inserted = await dbFetch('projects', {method:'POST', prefer:'return=representation', headers:{'Prefer':'return=representation'}, body:JSON.stringify(data)});
   if(!inserted){showToast('Failed to save project.','error');return;}
   const newProj = Array.isArray(inserted) ? inserted[0] : inserted;
@@ -971,7 +1127,7 @@ function openEditProject(id){
   <div class="modal-header"><div><div class="modal-title">Edit Project</div><div class="modal-subtitle">${p.name}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
     <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="ep-name" value="${p.name||''}"/></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="ep-type"><option ${p.type==='Strategic'?'selected':''}>Strategic</option><option ${p.type==='Operational'?'selected':''}>Operational</option><option ${p.type==='Process'?'selected':''}>Process</option><option ${p.type==='Transformation'?'selected':''}>Transformation</option><option ${p.type==='Workforce'?'selected':''}>Workforce</option><option ${p.type==='Quality'?'selected':''}>Quality</option><option ${p.type==='Revenue'?'selected':''}>Revenue</option></select></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="ep-pri"><option ${p.priority==='P1'?'selected':''}>P1</option><option ${p.priority==='P2'?'selected':''}>P2</option><option ${p.priority==='P3'?'selected':''}>P3</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Type (select all that apply)</label><div id="ep-types-list" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px 14px">${['Strategic','Operational','Process','Transformation','Workforce','Quality','Revenue'].map(t=>{const cur=Array.isArray(p.type)?p.type:[p.type];return`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--text2)"><input type="checkbox" value="${t}" ${cur.includes(t)?'checked':''} style="accent-color:#C8161D"/>${t}</label>`;}).join('')}</div></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="ep-pri"><option ${p.priority==='P1'?'selected':''}>P1</option><option ${p.priority==='P2'?'selected':''}>P2</option><option ${p.priority==='P3'?'selected':''}>P3</option></select></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Status</label><select class="form-select" id="ep-status"><option ${p.status==='Planning'?'selected':''}>Planning</option><option ${p.status==='In Progress'?'selected':''}>In Progress</option><option ${p.status==='Completed'?'selected':''}>Completed</option><option ${p.status==='On Hold'?'selected':''}>On Hold</option></select></div><div class="form-group"><label class="form-label">RAG</label><select class="form-select" id="ep-rag"><option value="G" ${p.rag==='G'?'selected':''}>Green — On Track</option><option value="A" ${p.rag==='A'?'selected':''}>Amber — At Risk</option><option value="R" ${p.rag==='R'?'selected':''}>Red — Off Track</option></select></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="ep-owner" value="${p.owner||''}"/></div><div class="form-group"><label class="form-label">Sponsor</label><input class="form-input" id="ep-sponsor" value="${p.sponsor||''}"/></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Region</label><select class="form-select" id="ep-region"><option ${p.region==='Global'?'selected':''}>Global</option><option ${p.region==='US'?'selected':''}>US</option><option ${p.region==='EU'?'selected':''}>EU</option><option ${p.region==='EMEA'?'selected':''}>EMEA</option><option ${p.region==='APAC'?'selected':''}>APAC</option><option ${p.region==='LATAM'?'selected':''}>LATAM</option></select></div><div class="form-group"><label class="form-label">Business Impact</label><select class="form-select" id="ep-impact"><option ${p.impact==='Critical'?'selected':''}>Critical</option><option ${p.impact==='High'?'selected':''}>High</option><option ${p.impact==='Medium'?'selected':''}>Medium</option><option ${p.impact==='Low'?'selected':''}>Low</option></select></div></div>
@@ -987,9 +1143,10 @@ async function saveEditProject(id){
   const name=document.getElementById('ep-name')?.value.trim()||'';
   if(!name){showToast('Project name required.','error');return;}
   const kpis=Array.from(document.querySelectorAll('#ep-kpis-list input[type=checkbox]:checked')).map(o=>o.value);
+  const types=Array.from(document.querySelectorAll('#ep-types-list input[type=checkbox]:checked')).map(o=>o.value);
   const updates={
     name,
-    type:document.getElementById('ep-type').value,
+    type:types.length===1?types[0]:types.length>1?types:'',
     status:document.getElementById('ep-status').value,
     rag:document.getElementById('ep-rag').value,
     priority:document.getElementById('ep-pri').value,
@@ -1085,8 +1242,15 @@ async function saveEditTask(projId, msId, taskId){
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
   const newStatus=document.getElementById('et-status').value;
+  const existingTask=ms.tasks.find(t=>t.id===taskId);
+  // Enforce blocker if setting to blocked without one
+  if(newStatus==='blocked' && !existingTask?.blocker){
+    showToast('A blocker description is required when setting status to Blocked.','error');
+    openAddTaskBlocker(projId, msId, taskId);
+    return;
+  }
   const targetMsId=document.getElementById('et-move')?.value||'';
-  const updatedTask={...ms.tasks.find(t=>t.id===taskId),
+  const updatedTask={...existingTask,
     name:document.getElementById('et-name').value,
     owner:document.getElementById('et-owner').value,
     due:document.getElementById('et-due').value,
@@ -1297,6 +1461,13 @@ function openEditMilestone(projId, msId){
 async function saveEditMilestone(projId, msId){
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const newStatus=document.getElementById('em-status').value;
+  const existingMs=p.milestones?.find(m=>m.id===msId);
+  // Enforce blocker if setting to blocked without one
+  if(newStatus==='blocked' && !existingMs?.blocker){
+    showToast('A blocker description is required when setting status to Blocked.','error');
+    openAddMsBlocker(projId, msId);
+    return;
+  }
   p.milestones=(p.milestones||[]).map(m=>m.id===msId?{...m,
     name:document.getElementById('em-name').value,
     owner:document.getElementById('em-owner').value,
