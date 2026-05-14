@@ -721,9 +721,12 @@ function openProjectDetail(id){
   const days=daysUntil(p.due);
   const bp=p.budget?.planned>0?Math.round(p.budget.actual/p.budget.planned*100):null;
   openModal(`
-  <div class="detail-header">
-    <div class="detail-title">${p.name}</div>
-    <div class="detail-badges">${statusBadge(p)} ${typeBadge(p.type)} ${priBadge(p.priority)} <span class="badge badge-gray">${p.region||''}</span></div>
+  <div class="detail-header" style="display:flex;align-items:flex-start;justify-content:space-between">
+    <div>
+      <div class="detail-title">${p.name}</div>
+      <div class="detail-badges">${statusBadge(p)} ${typeBadge(p.type)} ${priBadge(p.priority)} <span class="badge badge-gray">${p.region||''}</span></div>
+    </div>
+    <button class="icon-btn" onclick="closeModal()" style="flex-shrink:0;margin-left:8px" title="Close"><i class="ti ti-x"></i></button>
   </div>
   <div class="detail-body">
     <div>
