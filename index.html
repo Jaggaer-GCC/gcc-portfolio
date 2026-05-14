@@ -113,7 +113,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--content-
 .task-cb{width:17px;height:17px;border-radius:4px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:transparent;color:transparent;transition:all .12s}
 .task-cb.done{background:var(--green);border-color:var(--green);color:#fff}
 .task-cb i{font-size:11px}
-.task-name{font-size:12px;color:var(--text);flex:1;min-width:0}
+.task-name{font-size:12px;color:var(--text);flex:1;min-width:0;word-break:break-word}
 .task-name.done{text-decoration:line-through;color:var(--text3)}
 .task-due{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;flex-shrink:0}
 .ms-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:6px;margin-bottom:6px}
@@ -233,7 +233,7 @@ body{background:#F4F5F7}
 .task-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:12px}
 .task-row.blocked{background:var(--red-bg);border-color:rgba(200,22,29,0.3)}
 .task-row.completed{background:var(--green-bg);border-color:rgba(5,150,105,0.2);opacity:0.85}
-.task-row .task-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-row .task-name{flex:1;min-width:0;white-space:normal;word-break:break-word}
 .chevron-icon{font-size:13px;color:var(--text3);transition:transform .15s;flex-shrink:0}
 .chevron-icon.open{transform:rotate(90deg)}
 </style>
@@ -664,7 +664,7 @@ const ragCls=r=>r==='G'?'badge-green':r==='A'?'badge-amber':'badge-red';
 const ragDot=r=>`<span class="rag ${r==='G'?'rag-g':r==='A'?'rag-a':'rag-r'}"></span>`;
 const statusLabel=p=>p.status==='Completed'?'Completed':p.status==='Planning'?'Planning':p.rag==='G'?'On Track':p.rag==='A'?'At Risk':'Off Track';
 const statusBadge=p=>`<span class="badge ${p.status==='Completed'?'badge-green':p.status==='Planning'?'badge-purple':ragCls(p.rag)}">${statusLabel(p)}</span>`;
-const typeColors={Strategic:'badge-blue',Operational:'badge-teal',Process:'badge-gray',Transformation:'badge-red',Workforce:'badge-purple',Quality:'badge-green'};
+const typeColors={Strategic:'badge-blue',Operational:'badge-teal',Process:'badge-gray',Transformation:'badge-red',Workforce:'badge-purple',Quality:'badge-green',Revenue:'badge-purple'};
 const typeBadge=t=>`<span class="badge ${typeColors[t]||'badge-gray'}">${t}</span>`;
 const priBadge=p=>p==='P1'?`<span class="badge badge-red">${p}</span>`:`<span class="badge badge-gray">${p}</span>`;
 const isOverdue=d=>d&&new Date(d)<new Date();
@@ -704,7 +704,7 @@ async function renderDashboard(){
 
 // ── Projects ──────────────────────────────────────────
 async function renderProjects(){
-  const types=['All','Strategic','Operational','Process','Transformation','Workforce','Quality'];
+  const types=['All','Strategic','Operational','Process','Transformation','Workforce','Quality','Revenue'];
   const filtered=filterProjects==='All'?projects:projects.filter(p=>p.type===filterProjects);
   return`
   <div class="filters">${types.map(t=>`<button class="filter-btn ${filterProjects===t?'active':''}" onclick="filterProjects='${t}';renderView('projects')">${t}</button>`).join('')}</div>
@@ -909,7 +909,7 @@ function openNewProject(){
   <div class="modal-header"><div><div class="modal-title">New Project</div><div class="modal-subtitle">Add to the GCC portfolio</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
     <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="np-name" placeholder="e.g. APAC Escalation Reduction"/></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="np-type"><option>Strategic</option><option>Operational</option><option>Process</option><option>Transformation</option><option>Workforce</option><option>Quality</option></select></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="np-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="np-type"><option>Strategic</option><option>Operational</option><option>Process</option><option>Transformation</option><option>Workforce</option><option>Quality</option><option>Revenue</option></select></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="np-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="np-owner" placeholder="Initials e.g. JM"/></div><div class="form-group"><label class="form-label">Sponsor</label><input class="form-input" id="np-sponsor" placeholder="Executive sponsor"/></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Region</label><select class="form-select" id="np-region"><option>Global</option><option>US</option><option>EU</option><option>EMEA</option><option>APAC</option><option>LATAM</option></select></div><div class="form-group"><label class="form-label">Business Impact</label><select class="form-select" id="np-impact"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Start Date</label><input class="form-input" id="np-start" type="date"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="np-due" type="date"/></div></div>
@@ -971,7 +971,7 @@ function openEditProject(id){
   <div class="modal-header"><div><div class="modal-title">Edit Project</div><div class="modal-subtitle">${p.name}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
     <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="ep-name" value="${p.name||''}"/></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="ep-type"><option ${p.type==='Strategic'?'selected':''}>Strategic</option><option ${p.type==='Operational'?'selected':''}>Operational</option><option ${p.type==='Process'?'selected':''}>Process</option><option ${p.type==='Transformation'?'selected':''}>Transformation</option><option ${p.type==='Workforce'?'selected':''}>Workforce</option><option ${p.type==='Quality'?'selected':''}>Quality</option></select></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="ep-pri"><option ${p.priority==='P1'?'selected':''}>P1</option><option ${p.priority==='P2'?'selected':''}>P2</option><option ${p.priority==='P3'?'selected':''}>P3</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="ep-type"><option ${p.type==='Strategic'?'selected':''}>Strategic</option><option ${p.type==='Operational'?'selected':''}>Operational</option><option ${p.type==='Process'?'selected':''}>Process</option><option ${p.type==='Transformation'?'selected':''}>Transformation</option><option ${p.type==='Workforce'?'selected':''}>Workforce</option><option ${p.type==='Quality'?'selected':''}>Quality</option><option ${p.type==='Revenue'?'selected':''}>Revenue</option></select></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="ep-pri"><option ${p.priority==='P1'?'selected':''}>P1</option><option ${p.priority==='P2'?'selected':''}>P2</option><option ${p.priority==='P3'?'selected':''}>P3</option></select></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Status</label><select class="form-select" id="ep-status"><option ${p.status==='Planning'?'selected':''}>Planning</option><option ${p.status==='In Progress'?'selected':''}>In Progress</option><option ${p.status==='Completed'?'selected':''}>Completed</option><option ${p.status==='On Hold'?'selected':''}>On Hold</option></select></div><div class="form-group"><label class="form-label">RAG</label><select class="form-select" id="ep-rag"><option value="G" ${p.rag==='G'?'selected':''}>Green — On Track</option><option value="A" ${p.rag==='A'?'selected':''}>Amber — At Risk</option><option value="R" ${p.rag==='R'?'selected':''}>Red — Off Track</option></select></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="ep-owner" value="${p.owner||''}"/></div><div class="form-group"><label class="form-label">Sponsor</label><input class="form-input" id="ep-sponsor" value="${p.sponsor||''}"/></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Region</label><select class="form-select" id="ep-region"><option ${p.region==='Global'?'selected':''}>Global</option><option ${p.region==='US'?'selected':''}>US</option><option ${p.region==='EU'?'selected':''}>EU</option><option ${p.region==='EMEA'?'selected':''}>EMEA</option><option ${p.region==='APAC'?'selected':''}>APAC</option><option ${p.region==='LATAM'?'selected':''}>LATAM</option></select></div><div class="form-group"><label class="form-label">Business Impact</label><select class="form-select" id="ep-impact"><option ${p.impact==='Critical'?'selected':''}>Critical</option><option ${p.impact==='High'?'selected':''}>High</option><option ${p.impact==='Medium'?'selected':''}>Medium</option><option ${p.impact==='Low'?'selected':''}>Low</option></select></div></div>
@@ -1058,12 +1058,17 @@ function openEditTask(projId, msId, taskId){
   const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
   const t=ms.tasks?.find(x=>x.id===taskId); if(!t) return;
   const statusOpts=TASK_STATUSES.map(s=>`<option value="${s}" ${t.status===s?'selected':''}>${statusLabel2(s)}</option>`).join('');
+  const otherMs=(p.milestones||[]).filter(m=>m.id!==msId);
+  const moveOpts=otherMs.length>0
+    ?`<div class="form-group" style="margin-top:4px"><label class="form-label" style="display:flex;align-items:center;gap:6px"><i class="ti ti-arrows-transfer-down" style="font-size:13px;color:var(--text3)"></i> Move to Milestone</label><select class="form-select" id="et-move"><option value="">— Stay in ${ms.name} —</option>${otherMs.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select></div>`
+    :'<div style="font-size:11px;color:var(--text3);margin-top:4px;padding:6px 0">No other milestones to move to.</div>';
   openModal(`
   <div class="modal-header"><div><div class="modal-title">Edit Task</div><div class="modal-subtitle">${ms.name}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
     <div class="form-group"><label class="form-label">Task Name</label><input class="form-input" id="et-name" value="${t.name}"/></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="et-owner" value="${t.owner||''}"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="et-due" type="date" value="${t.due||''}"/></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="et-pri"><option ${t.priority==='P1'?'selected':''}>P1</option><option ${t.priority==='P2'?'selected':''}>P2</option><option ${t.priority==='P3'?'selected':''}>P3</option></select></div><div class="form-group"><label class="form-label">Status</label><select class="form-select" id="et-status">${statusOpts}</select></div></div>
+    ${moveOpts}
     <div id="et-blocker-section">
       ${t.blocker?`<div class="form-group" id="et-blocker-display"><label class="form-label" style="color:var(--red)">Active Blocker</label><div style="background:var(--red-bg);border:1px solid rgba(200,22,29,0.3);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--red)">${t.blocker.title}<br/><span style="color:var(--text3);font-size:11px">${t.blocker.desc||''}</span></div><button class="btn btn-ghost" style="margin-top:6px;font-size:11px" onclick="resolveTaskBlocker('${projId}','${msId}','${taskId}')"><i class="ti ti-check"></i> Resolve blocker</button></div>`:''}
     </div>
@@ -1078,17 +1083,28 @@ function openEditTask(projId, msId, taskId){
 
 async function saveEditTask(projId, msId, taskId){
   const p=projects.find(x=>x.id===projId); if(!p) return;
-  let newStatus=document.getElementById('et-status').value;
   const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
-  ms.tasks=(ms.tasks||[]).map(t=>t.id===taskId?{...t,
+  const newStatus=document.getElementById('et-status').value;
+  const targetMsId=document.getElementById('et-move')?.value||'';
+  const updatedTask={...ms.tasks.find(t=>t.id===taskId),
     name:document.getElementById('et-name').value,
     owner:document.getElementById('et-owner').value,
     due:document.getElementById('et-due').value,
     priority:document.getElementById('et-pri').value,
     status:newStatus
-  }:t);
-  await recalcAndSave(p);
-  showToast('Task updated.'); openProjectDetail(projId);
+  };
+  if(targetMsId){
+    ms.tasks=(ms.tasks||[]).filter(t=>t.id!==taskId);
+    const targetMs=p.milestones.find(m=>m.id===targetMsId);
+    if(targetMs) targetMs.tasks=[...(targetMs.tasks||[]),updatedTask];
+    await recalcAndSave(p);
+    showToast(`Task moved to "${targetMs?.name||'milestone'}".`);
+  } else {
+    ms.tasks=(ms.tasks||[]).map(t=>t.id===taskId?updatedTask:t);
+    await recalcAndSave(p);
+    showToast('Task updated.');
+  }
+  openProjectDetail(projId);
 }
 
 async function deleteTask(projId, msId, taskId){
@@ -1172,9 +1188,19 @@ async function saveTaskBlocker(projId, msId, taskId){
   if(!title){showToast('Title required.','error');return;}
   const p=projects.find(x=>x.id===projId); if(!p) return;
   const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
-  ms.tasks=(ms.tasks||[]).map(t=>t.id===taskId?{...t,status:'blocked',blocker:{id:'b'+Date.now(),title,desc:document.getElementById('ab-desc').value,owner:document.getElementById('ab-owner').value,raised:document.getElementById('ab-date').value}}:t);
+  const blockerObj={id:'b'+Date.now(),title,desc:document.getElementById('ab-desc').value,owner:document.getElementById('ab-owner').value,raised:document.getElementById('ab-date').value};
+  // Set task to blocked
+  ms.tasks=(ms.tasks||[]).map(t=>t.id===taskId?{...t,status:'blocked',blocker:blockerObj}:t);
+  // Ask if milestone should also be blocked
+  const blockMs=confirm(`Does this also block the milestone "${ms.name}"?\n\nOK = Yes, block the milestone too\nCancel = No, task only`);
+  if(blockMs && !ms.blocker){
+    ms.status='blocked';
+    ms.blocker={...blockerObj,id:'b'+Date.now()};
+  }
   await recalcAndSave(p);
-  updateBadges(); closeModal(); showToast('Blocker added. Task set to Blocked.'); openProjectDetail(projId);
+  updateBadges(); closeModal();
+  showToast(blockMs?'Blocker added. Task and milestone set to Blocked.':'Blocker added. Task set to Blocked.');
+  openProjectDetail(projId);
 }
 async function resolveTaskBlocker(projId, msId, taskId){
   const p=projects.find(x=>x.id===projId); if(!p) return;
@@ -1330,7 +1356,7 @@ function renderMsSection(p){
         <i class="ti ti-chevron-right chevron-icon ${isOpen?'open':''}"></i>
         <span class="status-dot" style="background:${statusColor}"></span>
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px">
+          <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;word-break:break-word">
             ${m.name}
             ${m.status==='blocked'?`<span class="badge badge-red" style="font-size:9px">BLOCKED</span>`:''}
             ${m.status==='completed'?`<span class="badge badge-green" style="font-size:9px">DONE</span>`:''}
