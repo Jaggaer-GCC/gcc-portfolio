@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GCC Portfolio — Operations Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>window.GCC_PORTAL = "portfolio";</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* PULSE color system — light content, dark sidebar */
+  --bg:#F4F5F7;
+  --surface:#FFFFFF;--surface2:#F9FAFB;--surface3:#F3F4F6;
+  --border:#E5E7EB;--border2:#D1D5DB;
+  /* Text — dark on light backgrounds */
+  --text:#111827;--text2:#4B5563;--text3:#6B7280;
+  /* Semantic aliases */
+  --content-bg:#F4F5F7;--card-bg:#FFFFFF;--card-border:#E5E7EB;
+  --content-text:#111827;--content-text2:#6B7280;--content-text3:#9CA3AF;
+  /* Sidebar stays dark via direct hex in sidebar CSS */
+  --sidebar-bg:#1E1E2E;--sidebar-border:#3A3A50;
+  --sidebar-text:#E8EAF0;--sidebar-text2:#9CA3AF;
+  /* PULSE red */
+  --blue:#C8161D;--blue-bg:rgba(200,22,29,0.08);--blue-dim:rgba(200,22,29,0.15);
+  /* Semantic */
+  --green:#059669;--green-bg:#ECFDF5;
+  --amber:#D97706;--amber-bg:#FFFBEB;
+  --red:#C8161D;--red-bg:#FEF2F2;
+  --purple:#7C3AED;--purple-bg:#F5F3FF;
+  --teal:#0891B2;--teal-bg:#ECFEFF;
+  --radius:8px;--radius-lg:12px;
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--content-bg);color:var(--content-text);font-size:14px}
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;min-height:100vh;background:#1E1E2E;border-right:1px solid #3A3A50;display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:18px 18px 14px;border-bottom:1px solid #3A3A50;display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0}
+.logo-text{font-size:13px;font-weight:600;color:#E8EAF0}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.sidebar-nav{padding:12px 8px;flex:1}
+.nav-section{margin-bottom:20px}
+.nav-label{font-size:9px;font-weight:600;color:#556080;text-transform:uppercase;letter-spacing:1px;padding:0 10px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;color:#9CA3AF;font-size:13px;transition:all .12s;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--blue-bg);color:var(--blue)}
+.nav-item i{font-size:16px;width:18px;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;min-width:16px;text-align:center}
+.sidebar-user{padding:12px 14px;border-top:1px solid #3A3A50;display:flex;align-items:center;gap:10px}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--blue);flex-shrink:0}
+.user-name{font-size:12px;font-weight:500;color:#E8EAF0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:10px;color:#6B7280}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--content-bg)}
+.topbar{padding:13px 24px;border-bottom:1px solid var(--card-border);display:flex;align-items:center;justify-content:space-between;background:var(--card-bg);flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:600;color:var(--content-text)}
+.topbar-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.content{flex:1;padding:24px;overflow-y:auto;background:var(--content-bg)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .12s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.btn i{font-size:14px}
+.btn-primary{background:#C8161D;color:#fff}
+.btn-primary:hover{background:#A8121A}
+.btn-ghost{background:transparent;color:var(--content-text2);border:1px solid #D1D5DB}
+.btn-ghost:hover{background:#F3F4F6;color:var(--content-text)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(239,83,80,.3)}
+.icon-btn{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:#6B7280;transition:all .12s}
+.icon-btn:hover{background:#F3F4F6;color:#111827}
+.icon-btn i{font-size:15px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-lg);padding:16px 18px}
+.stat-label{font-size:10px;color:var(--content-text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-value{font-size:28px;font-weight:600;color:var(--content-text);font-family:'DM Mono',monospace;line-height:1;margin-bottom:4px}
+.stat-meta{font-size:11px;color:#6B7280}
+.stat-meta.up{color:var(--green)}
+.stat-meta.down{color:var(--red)}
+.panel{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-lg);padding:18px}
+.panel-title{font-size:13px;font-weight:600;color:var(--content-text);margin-bottom:14px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-title{font-size:13px;font-weight:600;color:var(--content-text)}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-amber{background:var(--amber-bg);color:var(--amber)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-purple{background:var(--purple-bg);color:var(--purple)}
+.badge-teal{background:var(--teal-bg);color:var(--teal)}
+.badge-gray{background:#F3F4F6;color:#4B5563;border:1px solid #E5E7EB}
+.rag{width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0}
+.rag-g{background:var(--green)}.rag-a{background:var(--amber)}.rag-r{background:var(--red)}
+.progress-bar{background:var(--surface3);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;background:#C8161D;transition:width .3s}
+.progress-fill.green{background:var(--green)}
+.progress-fill.amber{background:var(--amber)}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.filter-btn{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .12s;font-family:'DM Sans',sans-serif}
+.filter-btn:hover,.filter-btn.active{background:rgba(200,22,29,0.08);border-color:rgba(200,22,29,0.3);color:#C8161D}
+.data-table{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-lg);overflow:hidden}
+.table-head{display:grid;padding:9px 16px;background:#F9FAFB;border-bottom:1px solid var(--card-border)}
+.th{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.table-row{display:grid;padding:11px 16px;border-bottom:1px solid var(--card-border);align-items:center;cursor:pointer;transition:background .1s}
+.table-row:hover{background:#F9FAFB}
+.table-row:last-child{border-bottom:none}
+.row-primary{font-size:13px;font-weight:500;color:var(--content-text);margin-bottom:2px}
+.row-secondary{font-size:10px;color:var(--content-text3)}
+.owner-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.owner-av{width:22px;height:22px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:var(--text2);flex-shrink:0}
+.task-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.task-item:last-child{border-bottom:none}
+.task-cb{width:17px;height:17px;border-radius:4px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:transparent;color:transparent;transition:all .12s}
+.task-cb.done{background:var(--green);border-color:var(--green);color:#fff}
+.task-cb i{font-size:11px}
+.task-name{font-size:12px;color:var(--text);flex:1;min-width:0}
+.task-name.done{text-decoration:line-through;color:var(--text3)}
+.task-due{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;flex-shrink:0}
+.ms-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface2);border-radius:6px;margin-bottom:6px}
+.ms-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.kpi-item{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.kpi-name{font-size:11px;color:var(--text2);width:150px;flex-shrink:0}
+.kpi-bar-bg{flex:1;background:var(--surface3);border-radius:4px;height:6px;overflow:hidden}
+.kpi-bar{height:100%;border-radius:4px}
+.kpi-val{font-size:11px;font-family:'DM Mono',monospace;color:var(--text);width:44px;text-align:right;flex-shrink:0}
+.kpi-tgt{font-size:10px;color:var(--text3);width:52px;text-align:right;flex-shrink:0}
+.sp-panel{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:12px}
+.sp-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.sp-row:last-child{border-bottom:none}
+.sp-label{font-size:11px;color:var(--text3)}
+.sp-value{font-size:11px;color:var(--text);font-weight:500}
+.alert-banner{background:var(--amber-bg);border:1px solid rgba(245,166,35,.25);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.alert-banner i{color:var(--amber);font-size:16px;flex-shrink:0}
+.alert-text{font-size:12px;color:var(--amber)}
+.empty-state{text-align:center;padding:48px 20px;color:var(--content-text3)}
+.empty-state i{font-size:36px;margin-bottom:12px;display:block}
+.empty-state-title{font-size:14px;font-weight:500;color:var(--text2);margin-bottom:6px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-lg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto}
+.modal-wide{max-width:860px}
+.modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--card-border);display:flex;align-items:flex-start;justify-content:space-between;position:sticky;top:0;background:var(--card-bg);z-index:1}
+.modal-title{font-size:15px;font-weight:600;color:var(--content-text)}
+.modal-subtitle{font-size:11px;color:var(--text3);margin-top:2px}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:12px 22px;border-top:1px solid var(--card-border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--card-bg);z-index:1}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:10px;font-weight:600;color:var(--content-text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:block}
+.form-input,.form-select,.form-textarea{width:100%;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:6px;padding:8px 10px;color:var(--content-text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border .12s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:#C8161D}
+.form-select option{background:var(--surface2)}
+.form-textarea{resize:vertical;min-height:72px;line-height:1.5}
+.form-hint{font-size:10px;color:var(--text3);margin-top:4px}
+.login-screen{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;background:#F4F5F7;
+}
+body{background:#F4F5F7}
+.login-card{width:420px;max-width:95vw}
+.login-logo{margin-bottom:28px;text-align:center;background:#F4F5F7;padding:8px 0}
+.login-logo-img{max-width:260px;height:auto;display:block;margin:0 auto}
+.login-tagline{margin-top:10px;font-size:10px;letter-spacing:2px;color:#9CA3AF;text-transform:uppercase;font-family:'DM Sans',sans-serif;text-align:center}
+.login-form-card{
+  background:#FFFFFF;border:1px solid #E5E7EB;
+  border-radius:16px;padding:36px;
+  position:relative;overflow:hidden;
+  box-shadow:0 1px 4px rgba(0,0,0,0.06);
+}
+.login-form-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:#C8161D;
+}
+.login-form-group{margin-bottom:18px}
+.login-label{
+  font-size:10px;font-weight:700;color:#6B7280;
+  text-transform:uppercase;letter-spacing:1.5px;
+  margin-bottom:7px;display:block;
+}
+.login-input{
+  width:100%;background:#F9FAFB;
+  border:1px solid #E5E7EB;border-radius:8px;
+  padding:12px 14px;color:#111827;
+  font-size:14px;font-family:'DM Sans',sans-serif;
+  outline:none;transition:border .15s,box-shadow .15s;
+}
+.login-input:focus{border-color:#C8161D;box-shadow:0 0 0 3px rgba(200,22,29,0.08);background:#fff}
+.login-input::placeholder{color:#D1D5DB}
+.login-btn{
+  width:100%;padding:13px;
+  background:#C8161D;color:#FFFFFF;
+  border:none;border-radius:8px;
+  font-size:13px;font-weight:700;
+  cursor:pointer;font-family:'DM Sans',sans-serif;
+  margin-top:10px;transition:background .15s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  letter-spacing:1px;text-transform:uppercase;
+}
+.login-btn:hover{background:#A8121A}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-hint{font-size:11px;color:#9CA3AF;text-align:center;margin-top:16px;letter-spacing:.3px}
+.error-banner{
+  background:#FEF2F2;border:1px solid #FECACA;
+  border-radius:6px;padding:9px 12px;
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:16px;font-size:12px;color:#B91C1C;
+}
+.toast{position:fixed;bottom:24px;right:24px;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:8px;padding:10px 16px;font-size:13px;color:#111827;z-index:2000;display:flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.detail-header{padding:18px 22px;border-bottom:1px solid var(--card-border);background:var(--card-bg);position:sticky;top:0;z-index:10}
+.detail-title{font-size:17px;font-weight:600;color:var(--text);margin-bottom:8px}
+.detail-badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.detail-body{padding:18px 22px;display:grid;grid-template-columns:1fr 280px;gap:20px}
+.meta-row{display:flex;gap:14px;margin-bottom:14px}
+.meta-block{flex:1;min-width:0}
+.meta-label{font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.meta-value{font-size:12px;color:var(--text)}
+.tab-bar{display:flex;gap:2px;border-bottom:1px solid var(--card-border);margin-bottom:16px}
+.tab{padding:8px 14px;font-size:12px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;transition:color .12s}
+.tab:hover{color:var(--text)}
+.tab.active{color:#C8161D;border-bottom-color:#C8161D}
+.spin{animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* Task/Milestone status indicators */
+.status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+.status-dot-gray{background:#9CA3AF}
+.status-dot-green{background:var(--green)}
+.status-dot-amber{background:var(--amber)}
+.ms-row{border-radius:8px;margin-bottom:8px;border:1px solid var(--border);overflow:hidden}
+.ms-row.blocked{background:var(--red-bg);border-color:rgba(200,22,29,0.3)}
+.ms-row.completed{background:var(--green-bg);border-color:rgba(5,150,105,0.2)}
+.ms-header{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;background:transparent;user-select:none}
+.ms-header:hover{background:rgba(0,0,0,0.02)}
+.ms-tasks{padding:0 12px 10px 32px;display:flex;flex-direction:column;gap:4px}
+.task-row{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:12px}
+.task-row.blocked{background:var(--red-bg);border-color:rgba(200,22,29,0.3)}
+.task-row.completed{background:var(--green-bg);border-color:rgba(5,150,105,0.2);opacity:0.85}
+.task-row .task-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chevron-icon{font-size:13px;color:var(--text3);transition:transform .15s;flex-shrink:0}
+.chevron-icon.open{transform:rotate(90deg)}
+</style>
+</head>
+<body>
+
+<!-- PAGE LOADING -->
+<div id="page-loading" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:600;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div style="width:40px;height:40px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700">G</div>
+  <div style="color:var(--text3);font-size:13px">Loading...</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="pulse-logo.png" alt="PULSE by JAGGAER" class="login-logo-img"/>
+      <div class="login-tagline">Performance · Unified Leadership · Success Engine</div>
+    </div>
+    <div class="login-form-card">
+      <div id="login-error" class="error-banner" style="display:none">
+        <i class="ti ti-alert-circle"></i><span id="login-error-msg">Invalid credentials</span>
+      </div>
+      <div class="login-form-group">
+        <label class="login-label">Email</label>
+        <input class="login-input" id="login-email" type="email" placeholder="you@jaggaer.com" autocomplete="email"/>
+      </div>
+      <div class="login-form-group">
+        <label class="login-label">Password</label>
+        <input class="login-input" id="login-pass" type="password" placeholder="Password" autocomplete="current-password"/>
+      </div>
+      <button class="login-btn" id="login-btn">
+        <span id="login-btn-text">Sign In to PULSE</span>
+        <i class="ti ti-loader-2 spin" id="login-spin" style="display:none"></i>
+      </button>
+      <div class="login-hint">Contact your CS admin to request access</div>
+    </div>
+  </div>
+</div>
+
+<!-- PORTAL SELECTOR -->
+<div id="portal-selector" style="display:none;position:fixed;inset:0;background:#F4F5F7;z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:24px">
+  <div style="text-align:center;margin-bottom:8px">
+    <img src="pulse-logo.png" alt="PULSE" style="max-width:220px;height:auto;display:block;margin:0 auto 16px"/>
+    <div style="font-size:11px;color:#9CA3AF;letter-spacing:2px;text-transform:uppercase;font-family:'DM Sans',sans-serif;margin-bottom:6px">Welcome back, <span id="ps-name" style="color:#6B7280;font-weight:600"></span></div>
+    <div style="font-size:13px;color:#6B7280;font-family:'DM Sans',sans-serif">Select a portal to continue</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:520px;width:100%;padding:0 20px">
+    <div onclick="selectPortal('portfolio')" style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:14px;padding:28px 24px;cursor:pointer;transition:all .15s;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06)" onmouseover="this.style.borderColor='#C8161D';this.style.boxShadow='0 4px 12px rgba(200,22,29,0.12)'" onmouseout="this.style.borderColor='#E5E7EB';this.style.boxShadow='0 1px 4px rgba(0,0,0,0.06)'">
+      <div style="width:48px;height:48px;background:#FEF2F2;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+        <i class="ti ti-folders" style="font-size:22px;color:#C8161D"></i>
+      </div>
+      <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:6px;font-family:'DM Sans',sans-serif">Portfolio Tool</div>
+      <div style="font-size:11px;color:#9CA3AF;font-family:'DM Sans',sans-serif">Projects, KPIs, milestones and blockers</div>
+    </div>
+    <div onclick="selectPortal('elt')" style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:14px;padding:28px 24px;cursor:pointer;transition:all .15s;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06)" onmouseover="this.style.borderColor='#C8161D';this.style.boxShadow='0 4px 12px rgba(200,22,29,0.12)'" onmouseout="this.style.borderColor='#E5E7EB';this.style.boxShadow='0 1px 4px rgba(0,0,0,0.06)'">
+      <div style="width:48px;height:48px;background:#FEF2F2;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+        <i class="ti ti-messages" style="font-size:22px;color:#C8161D"></i>
+      </div>
+      <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:6px;font-family:'DM Sans',sans-serif">CS ELT Updates</div>
+      <div style="font-size:11px;color:#9CA3AF;font-family:'DM Sans',sans-serif">Leadership readouts and weekly submissions</div>
+    </div>
+  </div>
+  <button onclick="handleSignOut()" style="background:transparent;border:none;color:#9CA3AF;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px;transition:color .12s" onmouseover="this.style.color='#6B7280'" onmouseout="this.style.color='#9CA3AF'">Sign out</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="app" style="display:none">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">G</div>
+      <div><div class="logo-text">GCC Portfolio</div><div class="logo-sub">Operations Hub</div></div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Overview</div>
+        <button class="nav-item active" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
+        <button class="nav-item" onclick="nav('projects',this)"><i class="ti ti-folders"></i>Projects<span class="nav-badge" id="badge-active" style="display:none">0</span></button>
+        <button class="nav-item" onclick="nav('tasks',this)"><i class="ti ti-checklist"></i>All Tasks</button>
+        <button class="nav-item" onclick="nav('milestones',this)"><i class="ti ti-flag"></i>Milestones</button>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Intelligence</div>
+        <button class="nav-item" onclick="nav('kpis',this)"><i class="ti ti-chart-line"></i>KPI Tracker</button>
+        <button class="nav-item" onclick="nav('blockers',this)"><i class="ti ti-alert-triangle"></i>Blockers<span class="nav-badge" id="badge-blockers" style="display:none">0</span></button>
+      </div>
+      <div class="nav-section" id="admin-nav" style="display:none">
+        <div class="nav-label">Admin</div>
+        <button class="nav-item" onclick="nav('team',this)"><i class="ti ti-users"></i>Team</button>
+      </div>
+      <div class="nav-section" id="suite-nav" style="display:none">
+        <div class="nav-label">GCC Suite</div>
+        <a class="nav-item" href="elt.html" style="text-decoration:none"><i class="ti ti-messages"></i>ELT Weekly Updates</a>
+      </div>
+    </div>
+    <div id="portal-toggle" style="display:none;padding:10px 14px;border-top:1px solid var(--border)">
+        <div style="font-size:9px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Switch Portal</div>
+        <button onclick="switchPortal('elt')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;background:var(--purple-bg);color:var(--purple);border:none;cursor:pointer;font-size:12px;font-weight:500;width:100%;font-family:'DM Sans',sans-serif">
+          <i class="ti ti-messages" style="font-size:15px"></i>ELT Weekly Updates
+        </button>
+      </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="user-av">??</div>
+      <div style="flex:1;min-width:0">
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-role" id="user-role">GCC</div>
+      </div>
+      <button class="icon-btn" onclick="handleSignOut()" title="Sign out"><i class="ti ti-logout" style="font-size:15px"></i></button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div style="font-size:11px;color:var(--text3)" id="page-sub">Portfolio overview</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" id="btn-np" onclick="openNewProject()" style="display:none"><i class="ti ti-plus"></i> New Project</button>
+        <button class="btn btn-primary" id="btn-nt" onclick="openNewTask()" style="display:none"><i class="ti ti-plus"></i> New Task</button>
+      </div>
+    </div>
+    <div class="content" id="content">
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3)">
+        <i class="ti ti-loader-2 spin" style="font-size:24px"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-overlay" class="modal-overlay" style="display:none" >
+  <div class="modal" id="modal-inner"></div>
+</div>
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+// Config and auth handled by auth.js
+const SUPABASE_URL = 'https://tuubqxnphoifqjbumgxa.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR1dWJxeG5waG9pZnFqYnVtZ3hhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDQ2MjAsImV4cCI6MjA5NDEyMDYyMH0.U0Tdp6GUBZMF16z00WvxmMTRKtWaJQEX954oy_w70Q0';
+if (!window._sbClient) {
+  window._sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession:true, storageKey:'gcc-suite-auth', autoRefreshToken:true, detectSessionInUrl:false }
+  });
+}
+const sb = window._sbClient;
+
+const KPI_DEFS = [
+  {id:'sla',  name:'SLA Adherence',          target:95,  unit:'%',   higher:true},
+  {id:'fcr',  name:'First Contact Resolution',target:70,  unit:'%',   higher:true},
+  {id:'csat', name:'CSAT Score',              target:4.2, unit:'/5',  higher:true},
+  {id:'deflect',name:'Case Deflection Rate',  target:30,  unit:'%',   higher:true},
+  {id:'ttr',  name:'Avg Time to Resolve',     target:48,  unit:' hrs',higher:false},
+  {id:'esc',  name:'Escalation Rate',         target:5,   unit:'%',   higher:false},
+];
+const KPI_DEFAULTS = {sla:88,fcr:64,csat:3.9,deflect:18,ttr:61,esc:8};
+
+let currentUser=null, userProfile=null, canEdit=false;
+let projects=[], kpiValues={...KPI_DEFAULTS};
+let currentView='dashboard', filterProjects='All', filterTasks='open';
+let toastTimer=null;
+
+// ── Auth ──────────────────────────────────────────────
+async function handleLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const err=document.getElementById('login-error');
+  const btn=document.getElementById('login-btn');
+  err.style.display='none'; btn.disabled=true;
+  document.getElementById('login-btn-text').style.display='none';
+  document.getElementById('login-spin').style.display='inline';
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+  btn.disabled=false;
+  document.getElementById('login-btn-text').style.display='inline';
+  document.getElementById('login-spin').style.display='none';
+  if(error){
+    document.getElementById('login-error-msg').textContent=error.message;
+    err.style.display='flex';
+  }
+}
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin();});
+document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
+
+async function handleSignOut(){
+  clearPortalChoice();
+  chosePortalThisSession = null;
+  await sb.auth.signOut();
+}
+
+// Show loading state — reveals correct screen after auth resolves
+document.getElementById('login-screen').style.display='none';
+document.getElementById('app').style.display='none';
+document.getElementById('portal-selector').style.display='none';
+document.getElementById('page-loading').style.display='flex';
+
+// Portal choice persists across page navigations via localStorage
+// Cleared only on sign out so toggle works seamlessly
+function getPortalChoice() { try { return localStorage.getItem('gcc-portal-choice'); } catch { return null; } }
+function setPortalChoice(p) { try { localStorage.setItem('gcc-portal-choice', p); } catch {} }
+function clearPortalChoice() { try { localStorage.removeItem('gcc-portal-choice'); } catch {} }
+
+// Fallback: show login if auth doesn't resolve in 3s
+setTimeout(()=>{
+  const loading=document.getElementById('page-loading');
+  if(loading&&loading.style.display!=='none'){
+    loading.style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+  }
+},3000);
+
+sb.auth.onAuthStateChange(async(event, session) => {
+  if (session?.user && (event==='SIGNED_IN'||event==='INITIAL_SESSION')) {
+    const appVisible = document.getElementById('app').style.display==='flex';
+    const selectorVisible = document.getElementById('portal-selector').style.display==='flex';
+    if (appVisible || selectorVisible) return;
+    currentUser = session.user;
+    await loadProfile();
+    if (!hasPortalAccess('portfolio')) {
+      setPortalChoice('elt');
+      window.location.href = 'elt.html';
+      return;
+    }
+    await loadData();
+    const choice = getPortalChoice();
+    if (userProfile?.portal_access === 'both') {
+      if (choice === 'portfolio') { showApp(); }
+      else if (choice === 'elt') { window.location.href = 'elt.html'; }
+      else if (event === 'SIGNED_IN') { showPortalSelector(); }
+      else { showApp(); }
+    } else {
+      setPortalChoice('portfolio');
+      showApp();
+    }
+  } else if (event==='SIGNED_OUT'||(event==='INITIAL_SESSION'&&!session)) {
+    clearPortalChoice();
+    currentUser=null; userProfile=null; canEdit=false; projects=[];
+    document.getElementById('portal-selector').style.display='none';
+    document.getElementById('app').style.display='none';
+    document.getElementById('page-loading').style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+  }
+});
+
+function hasPortalAccess(portal) {
+  if (!userProfile) return false;
+  const access = userProfile.portal_access || 'portfolio';
+  return access === 'both' || access === portal;
+}
+
+function isSuperAdmin() {
+  return userProfile?.is_admin && userProfile?.portal_access === 'both';
+}
+
+function showPortalSelector() {
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='none';
+  document.getElementById('page-loading').style.display='none';
+  document.getElementById('portal-selector').style.display='flex';
+  document.getElementById('ps-name').textContent = userProfile?.name || currentUser.email;
+}
+
+function selectPortal(portal) {
+  document.getElementById('portal-selector').style.display='none';
+  setPortalChoice(portal);
+  if (portal === 'portfolio') showApp();
+  else window.location.href = 'elt.html';
+}
+
+function switchPortal(portal) {
+  setPortalChoice(portal);
+  if (portal === 'portfolio') showApp();
+  else window.location.href = 'elt.html';
+}
+
+async function dbFetch(path, options={}) {
+  // Use anon key directly - RLS disabled, no session lookup needed
+  const headers = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+    ...(options.headers || {})
+  };
+  if (options.prefer) headers['Prefer'] = options.prefer;
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    method: options.method || 'GET',
+    headers,
+    body: options.body || undefined
+  });
+  if (!res.ok && res.status !== 204) {
+    const err = await res.text();
+    console.warn('DB error:', path, err);
+    return null;
+  }
+  if (res.status === 204) return null;
+  try { return await res.json(); } catch(e) { return null; }
+}
+
+async function loadProfile(){
+  try {
+    const data = await dbFetch(`profiles?id=eq.${currentUser.id}&limit=1`);
+    if(data && data.length > 0){
+      userProfile=data[0]; canEdit=userProfile.can_edit||userProfile.is_admin;
+    } else {
+      // Check by email to prevent duplicates
+      const byEmail=await dbFetch('profiles?email=eq.'+encodeURIComponent(currentUser.email)+'&limit=1');
+      if(byEmail&&byEmail.length>0){
+        userProfile=byEmail[0]; canEdit=userProfile.can_edit||userProfile.is_admin;
+      } else {
+        const name=currentUser.email.split('@')[0];
+        const profile={id:currentUser.id,email:currentUser.email,name,role:'GCC Team',initials:name.slice(0,2).toUpperCase(),can_edit:false,is_admin:false,portal_access:'portfolio',must_change_password:false};
+        await dbFetch('profiles', {method:'POST', prefer:'return=minimal', body:JSON.stringify(profile)});
+        userProfile=profile; canEdit=false;
+      }
+    }
+  } catch(e) { console.warn('loadProfile error:', e); userProfile={name:currentUser.email,role:'GCC',initials:'??',can_edit:false,is_admin:false,portal_access:'portfolio'}; canEdit=false; }
+}
+
+async function loadData(){
+  try {
+    const proj = await dbFetch('projects?order=created_at.desc');
+    projects = proj || [];
+  } catch(e){ console.warn('Projects error:', e); projects=[]; }
+  try {
+    const kpi = await dbFetch('kpi_values?id=eq.main&limit=1');
+    if(kpi && kpi.length > 0) kpiValues={...KPI_DEFAULTS,...kpi[0]};
+  } catch(e){ console.warn('KPI error:', e); }
+}
+
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('portal-selector').style.display='none';
+  document.getElementById('page-loading').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('user-av').textContent=userProfile?.initials||'??';
+  document.getElementById('user-name').textContent=userProfile?.name||currentUser.email;
+  document.getElementById('user-role').textContent=userProfile?.role||'GCC';
+  if(userProfile?.is_admin) document.getElementById('admin-nav').style.display='block';
+  if(userProfile?.portal_access==='both') {
+    document.getElementById('suite-nav').style.display='block';
+    document.getElementById('portal-toggle').style.display='block';
+  }
+  if(canEdit){
+    document.getElementById('btn-np').style.display='inline-flex';
+    document.getElementById('btn-nt').style.display='inline-flex';
+  }
+  updateBadges();
+  if(userProfile?.must_change_password && !sessionStorage.getItem('pw-prompt-shown')){
+    sessionStorage.setItem('pw-prompt-shown','1');
+    renderView('dashboard');
+    promptPasswordChange();
+  }
+  else renderView('dashboard');
+}
+
+function promptPasswordChange(){
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Set Your Password</div><div class="modal-subtitle">Welcome to PULSE. Your account was created by an admin — please set your own password to continue.</div></div></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">New Password *</label><input class="form-input" id="cp-pass" type="password" placeholder="Min 8 characters"/></div>
+    <div class="form-group"><label class="form-label">Confirm Password *</label><input class="form-input" id="cp-confirm" type="password" placeholder="Repeat password"/></div>
+    <div id="cp-error" style="display:none;background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:8px 12px;font-size:12px;color:#B91C1C;margin-top:8px"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-primary" id="cp-save-btn"><i class="ti ti-check"></i> Set Password</button></div>`);
+  // Use addEventListener to avoid inline onclick scope issues
+  setTimeout(()=>{
+    const btn = document.getElementById('cp-save-btn');
+    if(btn) btn.addEventListener('click', saveNewPassword);
+    // Prevent dismissing modal until password is set
+    
+  }, 50);
+}
+
+async function saveNewPassword(){
+  const pass=document.getElementById('cp-pass').value;
+  const confirm=document.getElementById('cp-confirm').value;
+  const errEl=document.getElementById('cp-error');
+  errEl.style.display='none';
+  if(pass.length<8){errEl.textContent='Password must be at least 8 characters.';errEl.style.display='block';return;}
+  if(pass!==confirm){errEl.textContent='Passwords do not match.';errEl.style.display='block';return;}
+  const btn=document.getElementById('cp-save-btn');
+  if(btn){btn.disabled=true;btn.textContent='Saving...';}
+  const {error}=await sb.auth.updateUser({password:pass});
+  if(error){
+    errEl.textContent='Error: '+error.message;
+    errEl.style.display='block';
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Set Password';}
+    return;
+  }
+  await dbFetch('profiles?id=eq.'+currentUser.id, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({must_change_password:false})});
+  if(userProfile) userProfile.must_change_password=false;
+  // Restore modal overlay click behaviour
+  
+  sessionStorage.removeItem('pw-prompt-shown');
+  closeModal();
+  showToast('Password updated. Welcome to PULSE.');
+}
+
+// ── Nav ───────────────────────────────────────────────
+function nav(view,el){
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  if(el) el.classList.add('active');
+  else { const t=document.querySelector(`[onclick*="nav('${view}'"]`); if(t) t.classList.add('active'); }
+  renderView(view);
+}
+async function renderView(view){
+  currentView=view;
+  const titles={dashboard:['Dashboard','Portfolio overview — Global Customer Care'],projects:['Projects','All projects in the GCC portfolio'],tasks:['All Tasks','Tasks across all active projects'],milestones:['Milestones','Upcoming and completed milestones'],kpis:['KPI Tracker','Current performance vs targets'],blockers:['Active Blockers','Issues blocking project progress'],team:['Team & Access','User management and permissions']};
+  const [t,s]=titles[view]||[view,''];
+  document.getElementById('page-title').textContent=t;
+  document.getElementById('page-sub').textContent=s;
+  const views={dashboard:renderDashboard,projects:renderProjects,tasks:renderAllTasks,milestones:renderMilestones,kpis:renderKPIs,blockers:renderBlockers,team:renderTeam};
+  const fn=views[view]||(() =>'');
+  document.getElementById('content').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3)"><i class="ti ti-loader-2 spin" style="font-size:24px"></i></div>';
+  const html=await fn();
+  document.getElementById('content').innerHTML=html||'';
+}
+
+function updateBadges(){
+  const active=projects.filter(p=>p.status==='In Progress').length;
+  const ab=document.getElementById('badge-active');
+  ab.textContent=active; ab.style.display=active>0?'inline':'none';
+  const blocks=projects.reduce((a,p)=>a+(p.blockers?.length||0),0);
+  const bb=document.getElementById('badge-blockers');
+  bb.textContent=blocks; bb.style.display=blocks>0?'inline':'none';
+}
+
+// ── Helpers ───────────────────────────────────────────
+const ragCls=r=>r==='G'?'badge-green':r==='A'?'badge-amber':'badge-red';
+const ragDot=r=>`<span class="rag ${r==='G'?'rag-g':r==='A'?'rag-a':'rag-r'}"></span>`;
+const statusLabel=p=>p.status==='Completed'?'Completed':p.status==='Planning'?'Planning':p.rag==='G'?'On Track':p.rag==='A'?'At Risk':'Off Track';
+const statusBadge=p=>`<span class="badge ${p.status==='Completed'?'badge-green':p.status==='Planning'?'badge-purple':ragCls(p.rag)}">${statusLabel(p)}</span>`;
+const typeColors={Strategic:'badge-blue',Operational:'badge-teal',Process:'badge-gray',Transformation:'badge-red',Workforce:'badge-purple',Quality:'badge-green'};
+const typeBadge=t=>`<span class="badge ${typeColors[t]||'badge-gray'}">${t}</span>`;
+const priBadge=p=>p==='P1'?`<span class="badge badge-red">${p}</span>`:`<span class="badge badge-gray">${p}</span>`;
+const isOverdue=d=>d&&new Date(d)<new Date();
+const daysUntil=d=>Math.ceil((new Date(d)-new Date())/86400000);
+const onTrack=(k,v)=>k.higher?v>=k.target*0.95:v<=k.target*1.1;
+const pctBar=(k,v)=>Math.max(3,Math.min(100,k.higher?v/k.target*100:(2-v/k.target)*100));
+
+// ── Dashboard ─────────────────────────────────────────
+async function renderDashboard(){
+  const total=projects.length,active=projects.filter(p=>p.status==='In Progress').length;
+  const completed=projects.filter(p=>p.status==='Completed').length;
+  const atRisk=projects.filter(p=>p.rag==='R'||p.rag==='A').length;
+  const allBlocks=projects.reduce((a,p)=>a+(p.blockers?.length||0),0);
+  const overdueMs=projects.flatMap(p=>(p.milestones||[]).filter(m=>m.status!=='completed'&&isOverdue(m.date))).length;
+  const upMs=projects.flatMap(p=>(p.milestones||[]).filter(m=>m.status!=='completed').map(m=>({...m,pn:p.name}))).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,6);
+  return`
+  ${overdueMs>0?`<div class="alert-banner"><i class="ti ti-alert-triangle"></i><span class="alert-text">${overdueMs} milestone${overdueMs>1?'s':''} overdue across the portfolio.</span></div>`:''}
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Total Projects</div><div class="stat-value">${total}</div><div class="stat-meta">${active} active</div></div>
+    <div class="stat-card"><div class="stat-label">Active Blockers</div><div class="stat-value" style="color:var(--red)">${allBlocks}</div><div class="stat-meta ${allBlocks>0?'down':''}">${allBlocks>0?'Action required':'All clear'}</div></div>
+    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" style="color:var(--green)">${completed}</div><div class="stat-meta up">This cycle</div></div>
+    <div class="stat-card"><div class="stat-label">At Risk / Off Track</div><div class="stat-value" style="color:var(--amber)">${atRisk}</div><div class="stat-meta">of ${total} total</div></div>
+  </div>
+  <div class="section-header"><div class="section-title">Active Projects</div><button class="btn btn-ghost" onclick="nav('projects',null)" style="font-size:11px">View all</button></div>
+  ${renderProjectTable(projects.filter(p=>p.status!=='Completed').slice(0,5))}
+  <div class="two-col" style="margin-top:20px">
+    <div class="panel">
+      <div class="panel-title">KPI Performance <span style="font-size:10px;color:var(--text3);font-weight:400">vs target</span></div>
+      ${KPI_DEFS.map(k=>{const v=kpiValues[k.id]??KPI_DEFAULTS[k.id];const ot=onTrack(k,v);const color=ot?'var(--green)':'var(--amber)';return`<div class="kpi-item"><div class="kpi-name">${k.name}</div><div class="kpi-bar-bg"><div class="kpi-bar" style="width:${pctBar(k,v)}%;background:${color}"></div></div><div class="kpi-val">${v}${k.unit}</div><div class="kpi-tgt">tgt ${k.target}${k.unit}</div></div>`;}).join('')}
+    </div>
+    <div class="panel">
+      <div class="panel-title">Upcoming Milestones</div>
+      ${upMs.length===0?'<div style="font-size:12px;color:var(--text3)">No upcoming milestones.</div>':upMs.map(m=>`<div class="ms-item"><div class="ms-dot" style="background:${isOverdue(m.date)?'var(--red)':'var(--green)'}"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text)">${m.name}</div><div style="font-size:10px;color:var(--text3)">${m.pn}</div></div><div style="font-size:10px;color:${isOverdue(m.date)?'var(--red)':'var(--text3)'};font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ── Projects ──────────────────────────────────────────
+async function renderProjects(){
+  const types=['All','Strategic','Operational','Process','Transformation','Workforce','Quality'];
+  const filtered=filterProjects==='All'?projects:projects.filter(p=>p.type===filterProjects);
+  return`
+  <div class="filters">${types.map(t=>`<button class="filter-btn ${filterProjects===t?'active':''}" onclick="filterProjects='${t}';renderView('projects')">${t}</button>`).join('')}</div>
+  <div class="section-header"><div class="section-title">${filtered.length} Project${filtered.length!==1?'s':''}</div>${canEdit?`<button class="btn btn-primary" onclick="openNewProject()"><i class="ti ti-plus"></i> New Project</button>`:''}</div>
+  ${renderProjectTable(filtered)}`;
+}
+
+function renderProjectTable(list){
+  if(list.length===0) return`<div class="empty-state"><i class="ti ti-folders"></i><div class="empty-state-title">No projects found</div></div>`;
+  const cols='2fr 1fr 1fr 1fr 1fr 1fr 70px';
+  return`<div class="data-table">
+    <div class="table-head" style="grid-template-columns:${cols}"><div class="th">Project</div><div class="th">Type</div><div class="th">Status</div><div class="th">Owner</div><div class="th">Due</div><div class="th">Progress</div><div class="th"></div></div>
+    ${list.map(p=>{
+      const done=(p.milestones||[]).filter(m=>m.status==='completed').length,tot=(p.milestones||[]).length;
+      const days=daysUntil(p.due);
+      return`<div class="table-row" style="grid-template-columns:${cols}" onclick="openProjectDetail('${p.id}')">
+        <div><div class="row-primary">${p.name}</div><div class="row-secondary">${p.region||''} &bull; ${p.impact||''} impact &bull; ${done}/${tot} milestones</div></div>
+        <div>${typeBadge(p.type)}</div>
+        <div style="display:flex;align-items:center;gap:6px">${ragDot(p.rag)}${statusBadge(p)}</div>
+        <div><div class="owner-chip"><div class="owner-av">${p.owner||'?'}</div>${p.owner||'—'}</div></div>
+        <div style="font-size:11px;font-family:'DM Mono',monospace;color:${days<14&&p.status!=='Completed'?'var(--amber)':'var(--text2)'}">${p.due||'—'}</div>
+        <div><div style="display:flex;align-items:center;gap:6px"><div class="progress-bar" style="width:80px;height:5px"><div class="progress-fill ${p.progress>=100?'green':(p.rag==='A'||p.rag==='R')?'amber':''}" style="width:${p.progress||0}%"></div></div><span style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${p.progress||0}%</span></div></div>
+        <div style="display:flex;gap:4px" onclick="event.stopPropagation()">
+          <button class="icon-btn" onclick="openProjectDetail('${p.id}')"><i class="ti ti-eye"></i></button>
+          ${canEdit?`<button class="icon-btn" onclick="openEditProject('${p.id}')"><i class="ti ti-edit"></i></button>`:''}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// ── Project Detail ────────────────────────────────────
+function openProjectDetail(id){
+  const p=projects.find(x=>x.id===id); if(!p) return;
+  const days=daysUntil(p.due);
+  const totalTasks=( p.milestones||[]).reduce((a,m)=>a+(m.tasks||[]).length,0);
+  const doneTasks=(p.milestones||[]).reduce((a,m)=>a+(m.tasks||[]).filter(t=>t.status==='completed').length,0);
+  openModal(`
+  <div class="detail-header" style="display:flex;align-items:flex-start;justify-content:space-between">
+    <div>
+      <div class="detail-title">${p.name}</div>
+      <div class="detail-badges">${statusBadge(p)} ${typeBadge(p.type)} ${priBadge(p.priority)} <span class="badge badge-gray">${p.region||''}</span></div>
+    </div>
+    <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px">
+      ${canEdit?`<button class="btn btn-ghost" style="font-size:11px" onclick="openEditProject('${id}')"><i class="ti ti-edit"></i> Edit</button>`:''}
+      <button class="icon-btn" onclick="closeModal()" title="Close"><i class="ti ti-x"></i></button>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">${p.description||'No description.'}</div>
+      <div class="meta-row">
+        <div class="meta-block"><div class="meta-label">Owner</div><div class="meta-value">${p.owner||'—'}</div></div>
+        <div class="meta-block"><div class="meta-label">Sponsor</div><div class="meta-value">${p.sponsor||'—'}</div></div>
+        <div class="meta-block"><div class="meta-label">Due</div><div class="meta-value" style="font-family:'DM Mono',monospace">${p.due||'—'}</div></div>
+        <div class="meta-block"><div class="meta-label">Impact</div><div class="meta-value">${p.impact||'—'}</div></div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div class="meta-label" style="margin-bottom:6px">Overall Progress</div>
+        <div style="display:flex;align-items:center;gap:10px"><div class="progress-bar" style="flex:1;height:8px"><div class="progress-fill ${p.progress>=100?'green':(p.rag==='R'||p.rag==='A')?'amber':''}" style="width:${p.progress||0}%"></div></div><span style="font-size:13px;font-weight:600;font-family:'DM Mono',monospace">${p.progress||0}%</span></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">${doneTasks}/${totalTasks} tasks complete across ${(p.milestones||[]).length} milestones</div>
+      </div>
+      ${(p.kpis||[]).length>0?`<div style="margin-bottom:16px"><div class="meta-label" style="margin-bottom:6px">Linked KPIs</div><div style="display:flex;gap:6px;flex-wrap:wrap">${(p.kpis||[]).map(k=>{const def=KPI_DEFS.find(x=>x.id===k);return`<span class="badge badge-blue">${def?def.name:k}</span>`;}).join('')}</div></div>`:''}
+      ${p.acceptance?`<div style="margin-bottom:16px"><div class="meta-label" style="margin-bottom:4px">Definition of Done</div><div style="font-size:12px;color:var(--text2);line-height:1.6;padding:8px 10px;background:var(--surface2);border-radius:6px">${p.acceptance}</div></div>`:''}
+      <div>
+        <div class="meta-label" style="margin-bottom:8px">Milestones &amp; Tasks</div>
+        <div id="ms-section" data-pid="${id}">${renderMsSection(p)}</div>
+      </div>
+    </div>
+    <div>
+      <div class="sp-panel">
+        <div class="meta-label" style="margin-bottom:8px">Project Info</div>
+        <div class="sp-row"><div class="sp-label">Start</div><div class="sp-value" style="font-family:'DM Mono',monospace">${p.start||'—'}</div></div>
+        <div class="sp-row"><div class="sp-label">Due</div><div class="sp-value" style="font-family:'DM Mono',monospace">${p.due||'—'}</div></div>
+        <div class="sp-row"><div class="sp-label">Days remaining</div><div class="sp-value" style="color:${days<30&&p.status!=='Completed'?'var(--amber)':'var(--text)'}">${p.status==='Completed'?'Done':days>0?days:'Overdue'}</div></div>
+        <div class="sp-row"><div class="sp-label">Milestones</div><div class="sp-value">${(p.milestones||[]).filter(m=>m.status==='completed').length}/${(p.milestones||[]).length} done</div></div>
+      </div>
+      <div class="sp-panel">
+        <div class="meta-label" style="margin-bottom:8px;color:${(p.blockers||[]).length>0?'var(--red)':'var(--text3)'}">Project Blockers (${(p.blockers||[]).length})</div>
+        ${(p.blockers||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No project-level blockers.</div>':(p.blockers||[]).map(b=>`<div style="background:var(--red-bg);border:1px solid rgba(239,83,80,.2);border-radius:6px;padding:8px 10px;margin-bottom:6px"><div style="font-size:12px;color:var(--red);font-weight:600">${b.title}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${b.desc}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Owner: ${b.owner} &bull; Raised: ${b.raised}</div>${canEdit?`<button class="btn btn-ghost" style="margin-top:6px;font-size:10px" onclick="resolveBlocker('${id}','${b.id}')"><i class="ti ti-check"></i> Resolve</button>`:''}</div>`).join('')}
+        ${canEdit?`<button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="openAddBlocker('${id}')"><i class="ti ti-plus"></i> Add project blocker</button>`:''}
+      </div>
+    </div>
+  </div>`,'modal-wide');
+}
+
+// ── All Tasks ─────────────────────────────────────────
+async function renderAllTasks(){
+  const all=projects.flatMap(p=>(p.milestones||[]).flatMap(m=>(m.tasks||[]).map(t=>({...t,pn:p.name,pid:p.id,msName:m.name,msId:m.id}))));
+  const open=all.filter(t=>t.status!=='completed'),done=all.filter(t=>t.status==='completed');
+  const shown=filterTasks==='open'?open:done;
+  const statusColorMap={not_started:'#9CA3AF',on_track:'var(--green)',at_risk:'var(--amber)',blocked:'var(--red)',completed:'var(--green)'};
+  return`
+  <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${all.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Open</div><div class="stat-value" style="color:var(--amber)">${open.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" style="color:var(--green)">${done.length}</div></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab ${filterTasks==='open'?'active':''}" onclick="filterTasks='open';renderView('tasks')">Open (${open.length})</button>
+    <button class="tab ${filterTasks==='done'?'active':''}" onclick="filterTasks='done';renderView('tasks')">Completed (${done.length})</button>
+  </div>
+  <div class="panel">
+    ${shown.length===0?`<div class="empty-state"><i class="ti ti-checklist"></i><div class="empty-state-title">No tasks here</div></div>`:
+    shown.sort((a,b)=>(a.priority||'').localeCompare(b.priority||'')).map(t=>`
+    <div class="task-item">
+      <span class="status-dot" style="background:${statusColorMap[t.status||'not_started']}"></span>
+      <div style="flex:1;min-width:0"><div class="task-name" style="${t.status==='completed'?'text-decoration:line-through;color:var(--text3)':''}">${t.name}</div><div style="font-size:10px;color:var(--text3);margin-top:1px">${t.pn} &rsaquo; ${t.msName} &bull; ${t.owner||''}</div></div>
+      ${t.blocker?`<span class="badge badge-red" style="font-size:9px">BLOCKED</span>`:''}
+      ${priBadge(t.priority)}
+      <div class="task-due" style="color:${isOverdue(t.due)&&t.status!=='completed'?'var(--red)':'var(--text3)'}">${t.due||''}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── Milestones ────────────────────────────────────────
+async function renderMilestones(){
+  const all=projects.flatMap(p=>(p.milestones||[]).map(m=>({...m,pn:p.name,pid:p.id,taskCount:(m.tasks||[]).length,doneCount:(m.tasks||[]).filter(t=>t.status==='completed').length})));
+  const up=all.filter(m=>m.status!=='completed').sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const done=all.filter(m=>m.status==='completed');
+  const blocked=all.filter(m=>m.status==='blocked');
+  const statusColorMap={not_started:'#9CA3AF',on_track:'var(--green)',at_risk:'var(--amber)',blocked:'var(--red)',completed:'var(--green)'};
+  return`
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${all.length}</div></div>
+    <div class="stat-card"><div class="stat-label">In Progress</div><div class="stat-value" style="color:var(--blue)">${up.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Blocked</div><div class="stat-value" style="color:var(--red)">${blocked.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" style="color:var(--green)">${done.length}</div></div>
+  </div>
+  <div class="two-col">
+    <div class="panel"><div class="panel-title">Active (${up.length})</div>${up.length===0?'<div style="font-size:12px;color:var(--text3)">None.</div>':up.map(m=>`<div class="ms-item" style="${m.status==='blocked'?'background:var(--red-bg);border:1px solid rgba(200,22,29,0.2)':''}"><div class="ms-dot" style="background:${statusColorMap[m.status||'not_started']}"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text)">${m.name}${m.status==='blocked'?` <span class="badge badge-red" style="font-size:9px">BLOCKED</span>`:''}</div><div style="font-size:10px;color:var(--text3)">${m.pn} &bull; ${m.doneCount}/${m.taskCount} tasks &bull; ${m.owner||'no owner'}</div></div><div style="font-size:10px;color:${isOverdue(m.date)?'var(--red)':'var(--text3)'};font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}</div>
+    <div class="panel"><div class="panel-title">Completed (${done.length})</div>${done.length===0?'<div style="font-size:12px;color:var(--text3)">None yet.</div>':done.map(m=>`<div class="ms-item"><div class="ms-dot" style="background:var(--green)"></div><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text3);text-decoration:line-through">${m.name}</div><div style="font-size:10px;color:var(--text3)">${m.pn}</div></div><div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace">${m.date}</div></div>`).join('')}</div>
+  </div>`;
+}
+
+// ── KPIs ──────────────────────────────────────────────
+async function renderKPIs(){
+  return`
+  <div style="margin-bottom:20px"><div class="section-title" style="margin-bottom:4px">GCC KPI Tracker</div><div style="font-size:12px;color:var(--text3)">Current performance vs targets.</div></div>
+  ${KPI_DEFS.map(k=>{
+    const v=kpiValues[k.id]??KPI_DEFAULTS[k.id];
+    const ot=onTrack(k,v);const color=ot?'var(--green)':'var(--amber)';
+    const linked=projects.filter(p=>(p.kpis||[]).includes(k.id));
+    return`<div class="panel" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div><div style="font-size:14px;font-weight:600;color:var(--text)">${k.name}</div><div style="font-size:11px;color:var(--text3)">Target: ${k.target}${k.unit} &bull; ${k.higher?'Higher is better':'Lower is better'}</div></div>
+        <div style="text-align:right"><div style="font-size:26px;font-weight:600;color:${color};font-family:'DM Mono',monospace">${v}${k.unit}</div><div style="font-size:10px;color:${color};font-weight:600">${ot?'ON TRACK':'NEEDS ATTENTION'}</div></div>
+      </div>
+      <div class="progress-bar" style="height:8px;margin-bottom:12px"><div class="progress-fill" style="width:${pctBar(k,v)}%;background:${color}"></div></div>
+      ${linked.length>0?`<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Linked projects</div><div style="display:flex;gap:6px;flex-wrap:wrap">${linked.map(p=>`<span class="badge ${ragCls(p.rag)}" onclick="openProjectDetail('${p.id}')" style="cursor:pointer">${p.name}</span>`).join('')}</div>`:`<div style="font-size:11px;color:var(--text3)">No projects linked to this KPI.</div>`}
+      ${canEdit?`<button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="openEditKPI('${k.id}','${v}')"><i class="ti ti-edit"></i> Update value</button>`:''}
+    </div>`;
+  }).join('')}`;
+}
+
+// ── Blockers ──────────────────────────────────────────
+async function renderBlockers(){
+  // Collect project-level, milestone-level, and task-level blockers
+  const projBlocks=projects.flatMap(p=>(p.blockers||[]).map(b=>({...b,type:'Project',pn:p.name,pid:p.id,context:p.name})));
+  const msBlocks=projects.flatMap(p=>(p.milestones||[]).filter(m=>m.blocker).map(m=>({...m.blocker,type:'Milestone',pn:p.name,pid:p.id,msId:m.id,context:`${p.name} › ${m.name}`})));
+  const taskBlocks=projects.flatMap(p=>(p.milestones||[]).flatMap(m=>(m.tasks||[]).filter(t=>t.blocker).map(t=>({...t.blocker,type:'Task',pn:p.name,pid:p.id,msId:m.id,taskId:t.id,context:`${p.name} › ${m.name} › ${t.name}`}))));
+  const all=[...projBlocks,...msBlocks,...taskBlocks];
+  if(all.length===0) return`<div class="empty-state"><i class="ti ti-circle-check" style="color:var(--green)"></i><div class="empty-state-title" style="color:var(--text)">No active blockers</div><div>All projects, milestones and tasks are unblocked.</div></div>`;
+  return`<div class="section-title" style="margin-bottom:16px">${all.length} Active Blocker${all.length!==1?'s':''}</div>
+  ${all.map(b=>`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--red);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:12px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between"><div><div style="font-size:13px;font-weight:600;color:var(--red)">${b.title}</div><div style="font-size:11px;color:var(--text3);margin:3px 0">${b.context} &bull; <span class="badge badge-gray" style="font-size:9px">${b.type}</span> &bull; Owner: ${b.owner||'—'} &bull; Raised: ${b.raised||'—'}</div></div><span class="badge badge-red">Blocking</span></div>
+    <div style="font-size:12px;color:var(--text2);margin-top:6px">${b.desc||''}</div>
+    ${canEdit?`<button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="${b.type==='Project'?`resolveBlocker('${b.pid}','${b.id}')`:b.type==='Milestone'?`resolveMsBlocker('${b.pid}','${b.msId}')`:`resolveTaskBlocker('${b.pid}','${b.msId}','${b.taskId}')`}"><i class="ti ti-check"></i> Mark resolved</button>`:''}
+  </div>`).join('')}`;
+}
+
+// ── Team ──────────────────────────────────────────────
+async function renderTeam(){
+  if(!userProfile?.is_admin) return`<div class="empty-state"><i class="ti ti-lock"></i><div class="empty-state-title">Admin access required</div></div>`;
+  const users=await dbFetch('profiles?order=email');
+  const cols='2fr 1fr 1fr 1fr 1fr 80px';
+  return`
+  <div class="section-header">
+    <div><div class="section-title">Team Members (${(users||[]).length})</div><div style="font-size:11px;color:var(--text3);margin-top:2px">Manage user access and permissions</div></div>
+    <button class="btn btn-primary" onclick="openInviteUser()"><i class="ti ti-user-plus"></i> Add User</button>
+  </div>
+  <div class="data-table">
+    <div class="table-head" style="grid-template-columns:${cols}"><div class="th">User</div><div class="th">Role</div><div class="th">Region</div><div class="th">Portal</div><div class="th">Access</div><div class="th"></div></div>
+    ${(users||[]).map(u=>`<div class="table-row" style="grid-template-columns:${cols};cursor:default">
+      <div style="display:flex;align-items:center;gap:10px"><div class="owner-av" style="width:30px;height:30px;font-size:10px">${u.initials||'??'}</div><div><div class="row-primary">${u.name||u.email}</div><div class="row-secondary">${u.email}</div></div></div>
+      <div style="font-size:12px;color:var(--text2)">${u.role||'GCC'}</div>
+      <div style="font-size:12px;color:var(--text2)">${u.region||'—'}</div>
+      <div><span class="badge badge-gray">${u.portal_access==='both'?'Both':u.portal_access==='elt'?'ELT':'Portfolio'}</span></div>
+      <div><span class="badge ${u.is_admin&&u.portal_access==='both'?'badge-red':u.is_admin?'badge-amber':u.can_edit?'badge-blue':'badge-gray'}">${u.is_admin&&u.portal_access==='both'?'Superadmin':u.is_admin?'Admin':u.can_edit?'Editor':'Viewer'}</span></div>
+      <div style="display:flex;gap:4px">
+        <button class="icon-btn" onclick="openEditUser('${u.id}',${u.can_edit},${u.is_admin},'${u.name||''}','${u.role||''}','${u.region||''}','${u.portal_access||'portfolio'}','${u.department||''}')"><i class="ti ti-edit"></i></button>
+        ${u.id !== '${currentUser?.id}'?`<button class="icon-btn" onclick="deleteUser('${u.id}','${u.name||u.email}')" style="color:var(--red)"><i class="ti ti-trash"></i></button>`:''}
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── CRUD ──────────────────────────────────────────────
+function openNewProject(){
+  if(!canEdit) return;
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">New Project</div><div class="modal-subtitle">Add to the GCC portfolio</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="np-name" placeholder="e.g. APAC Escalation Reduction"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="np-type"><option>Strategic</option><option>Operational</option><option>Process</option><option>Transformation</option><option>Workforce</option><option>Quality</option></select></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="np-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="np-owner" placeholder="Initials e.g. JM"/></div><div class="form-group"><label class="form-label">Sponsor</label><input class="form-input" id="np-sponsor" placeholder="Executive sponsor"/></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Region</label><select class="form-select" id="np-region"><option>Global</option><option>US</option><option>EU</option><option>EMEA</option><option>APAC</option><option>LATAM</option></select></div><div class="form-group"><label class="form-label">Business Impact</label><select class="form-select" id="np-impact"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Start Date</label><input class="form-input" id="np-start" type="date"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="np-due" type="date"/></div></div>
+    <div class="form-group">
+      <label class="form-label">KPIs Impacted</label>
+      <div id="np-kpis-list" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:6px">
+        ${KPI_DEFS.map(k=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--content-text2)"><input type="checkbox" value="${k.id}" style="accent-color:#C8161D"/>${k.name}</label>`).join('')}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <input class="form-input" id="np-new-kpi" placeholder="Add new KPI name..." style="flex:1;font-size:12px;padding:6px 10px"/>
+        <button type="button" class="btn btn-ghost" style="font-size:11px;padding:5px 10px;white-space:nowrap" onclick="addInlineKPI()"><i class="ti ti-plus"></i> Add KPI</button>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="np-desc"></textarea></div>
+    <div class="form-group"><label class="form-label">Definition of Done</label><textarea class="form-textarea" id="np-accept" placeholder="What requirements must be met to consider this project complete?"></textarea></div>
+    <div class="form-group"><label class="form-label">RAG Status</label><select class="form-select" id="np-rag"><option value="G">Green — On Track</option><option value="A">Amber — At Risk</option><option value="R">Red — Off Track</option></select></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveNewProject()"><i class="ti ti-check"></i> Create Project</button></div>`);
+}
+
+function addInlineKPI(){
+  const inp = document.getElementById('np-new-kpi');
+  const name = inp?.value?.trim();
+  if(!name) return;
+  const id = 'kpi_' + Date.now();
+  // Add to KPI_DEFS in memory
+  KPI_DEFS.push({id, name, target:0, unit:'', direction:'higher'});
+  // Add checkbox to list
+  const list = document.getElementById('np-kpis-list');
+  if(list){
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--content-text2)';
+    lbl.innerHTML = `<input type="checkbox" value="${id}" checked style="accent-color:#C8161D"/> ${name}`;
+    list.appendChild(lbl);
+  }
+  inp.value = '';
+  showToast('KPI added.');
+}
+
+async function saveNewProject(){
+  const name=document.getElementById('np-name').value.trim();
+  if(!name){showToast('Project name required.','error');return;}
+  const kpis=Array.from(document.querySelectorAll('#np-kpis-list input[type=checkbox]:checked')).map(o=>o.value);
+  const data={name,type:document.getElementById('np-type').value,status:'Planning',rag:document.getElementById('np-rag').value,owner:document.getElementById('np-owner').value||'TBD',region:document.getElementById('np-region').value,priority:document.getElementById('np-pri').value,sponsor:document.getElementById('np-sponsor').value||'TBD',start:document.getElementById('np-start').value||new Date().toISOString().split('T')[0],due:document.getElementById('np-due').value||'',progress:0,description:document.getElementById('np-desc').value,kpis,impact:document.getElementById('np-impact').value,milestones:[],tasks:[],blockers:[],acceptance:document.getElementById('np-accept').value,created_by:userProfile?.name||currentUser?.email};
+  const inserted = await dbFetch('projects', {method:'POST', prefer:'return=representation', headers:{'Prefer':'return=representation'}, body:JSON.stringify(data)});
+  if(!inserted){showToast('Failed to save project.','error');return;}
+  const newProj = Array.isArray(inserted) ? inserted[0] : inserted;
+  projects.unshift(newProj); updateBadges(); closeModal(); showToast('Project created.');
+  // Navigate directly to the new project detail
+  renderView('projects');
+  setTimeout(()=>openProjectDetail(newProj.id),100);
+}
+
+function openEditProject(id){
+  if(!canEdit) return;
+  const p=projects.find(x=>x.id===id); if(!p) return;
+  const kpiChecks=KPI_DEFS.map(k=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--content-text2)"><input type="checkbox" value="${k.id}" ${(p.kpis||[]).includes(k.id)?'checked':''} style="accent-color:#C8161D"/>${k.name}</label>`).join('');
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Edit Project</div><div class="modal-subtitle">${p.name}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="ep-name" value="${p.name||''}"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Type</label><select class="form-select" id="ep-type"><option ${p.type==='Strategic'?'selected':''}>Strategic</option><option ${p.type==='Operational'?'selected':''}>Operational</option><option ${p.type==='Process'?'selected':''}>Process</option><option ${p.type==='Transformation'?'selected':''}>Transformation</option><option ${p.type==='Workforce'?'selected':''}>Workforce</option><option ${p.type==='Quality'?'selected':''}>Quality</option></select></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="ep-pri"><option ${p.priority==='P1'?'selected':''}>P1</option><option ${p.priority==='P2'?'selected':''}>P2</option><option ${p.priority==='P3'?'selected':''}>P3</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Status</label><select class="form-select" id="ep-status"><option ${p.status==='Planning'?'selected':''}>Planning</option><option ${p.status==='In Progress'?'selected':''}>In Progress</option><option ${p.status==='Completed'?'selected':''}>Completed</option><option ${p.status==='On Hold'?'selected':''}>On Hold</option></select></div><div class="form-group"><label class="form-label">RAG</label><select class="form-select" id="ep-rag"><option value="G" ${p.rag==='G'?'selected':''}>Green — On Track</option><option value="A" ${p.rag==='A'?'selected':''}>Amber — At Risk</option><option value="R" ${p.rag==='R'?'selected':''}>Red — Off Track</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="ep-owner" value="${p.owner||''}"/></div><div class="form-group"><label class="form-label">Sponsor</label><input class="form-input" id="ep-sponsor" value="${p.sponsor||''}"/></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Region</label><select class="form-select" id="ep-region"><option ${p.region==='Global'?'selected':''}>Global</option><option ${p.region==='US'?'selected':''}>US</option><option ${p.region==='EU'?'selected':''}>EU</option><option ${p.region==='EMEA'?'selected':''}>EMEA</option><option ${p.region==='APAC'?'selected':''}>APAC</option><option ${p.region==='LATAM'?'selected':''}>LATAM</option></select></div><div class="form-group"><label class="form-label">Business Impact</label><select class="form-select" id="ep-impact"><option ${p.impact==='Critical'?'selected':''}>Critical</option><option ${p.impact==='High'?'selected':''}>High</option><option ${p.impact==='Medium'?'selected':''}>Medium</option><option ${p.impact==='Low'?'selected':''}>Low</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Start Date</label><input class="form-input" id="ep-start" type="date" value="${p.start||''}"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="ep-due" type="date" value="${p.due||''}"/></div></div>
+    <div class="form-group"><label class="form-label">KPIs Impacted</label><div id="ep-kpis-list" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px 16px">${kpiChecks}</div></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="ep-desc">${p.description||''}</textarea></div>
+    <div class="form-group"><label class="form-label">Definition of Done</label><textarea class="form-textarea" id="ep-accept" placeholder="What requirements must be met to consider this project complete?">${p.acceptance||''}</textarea></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-danger" onclick="deleteProject('${id}')"><i class="ti ti-trash"></i> Delete</button><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEditProject('${id}')"><i class="ti ti-check"></i> Save</button></div>`,'modal-wide');
+}
+
+async function saveEditProject(id){
+  const name=document.getElementById('ep-name')?.value.trim()||'';
+  if(!name){showToast('Project name required.','error');return;}
+  const kpis=Array.from(document.querySelectorAll('#ep-kpis-list input[type=checkbox]:checked')).map(o=>o.value);
+  const updates={
+    name,
+    type:document.getElementById('ep-type').value,
+    status:document.getElementById('ep-status').value,
+    rag:document.getElementById('ep-rag').value,
+    priority:document.getElementById('ep-pri').value,
+    owner:document.getElementById('ep-owner').value,
+    sponsor:document.getElementById('ep-sponsor').value,
+    region:document.getElementById('ep-region').value,
+    impact:document.getElementById('ep-impact').value,
+    start:document.getElementById('ep-start').value,
+    due:document.getElementById('ep-due').value,
+    description:document.getElementById('ep-desc').value,
+    acceptance:document.getElementById('ep-accept').value,
+    kpis
+  };
+  await dbFetch(`projects?id=eq.${id}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify(updates)});
+  const idx=projects.findIndex(p=>p.id===id);
+  if(idx>-1) projects[idx]={...projects[idx],...updates};
+  updateBadges(); closeModal(); showToast('Project updated.'); renderView(currentView);
+}
+
+async function deleteProject(id){
+  const p=projects.find(x=>x.id===id); if(!p) return;
+  if(!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+  await dbFetch(`projects?id=eq.${id}`, {method:'DELETE'});
+  projects=projects.filter(x=>x.id!==id);
+  updateBadges(); closeModal(); showToast('Project deleted.'); renderView('projects');
+}
+
+// ── Status helpers ────────────────────────────────────
+const TASK_STATUSES=['not_started','on_track','at_risk','blocked','completed'];
+const statusLabel2=s=>({not_started:'Not Started',on_track:'On Track',at_risk:'At Risk',blocked:'Blocked',completed:'Completed'}[s]||'Not Started');
+function statusDot(s){
+  const map={not_started:'#9CA3AF',on_track:'var(--green)',at_risk:'var(--amber)',blocked:'var(--red)',completed:'var(--green)'};
+  return`<span class="status-dot" style="background:${map[s]||'#9CA3AF'}"></span>`;
+}
+function taskRowClass(t){
+  if(t.status==='blocked') return 'task-row blocked';
+  if(t.status==='completed') return 'task-row completed';
+  return 'task-row';
+}
+function msRowClass(m){
+  if(m.status==='blocked') return 'ms-row blocked';
+  if(m.status==='completed') return 'ms-row completed';
+  return 'ms-row';
+}
+function calcMilestoneProgress(m){
+  const tasks=m.tasks||[];
+  if(tasks.length===0) return m.status==='completed'?100:0;
+  return Math.round(tasks.filter(t=>t.status==='completed').length/tasks.length*100);
+}
+function calcProjectProgress(p){
+  const ms=p.milestones||[];
+  if(ms.length===0) return 0;
+  const total=ms.reduce((a,m)=>a+calcMilestoneProgress(m),0);
+  return Math.round(total/ms.length);
+}
+function recalcAndSave(p){
+  // Recalc project progress from milestones
+  p.progress=calcProjectProgress(p);
+  return dbFetch(`projects?id=eq.${p.id}`,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({milestones:p.milestones,progress:p.progress,tasks:p.tasks||[]})});
+}
+
+// ── Task CRUD (now nested under milestones) ───────────
+function openEditTask(projId, msId, taskId){
+  if(!canEdit) return;
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  const t=ms.tasks?.find(x=>x.id===taskId); if(!t) return;
+  const statusOpts=TASK_STATUSES.map(s=>`<option value="${s}" ${t.status===s?'selected':''}>${statusLabel2(s)}</option>`).join('');
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Edit Task</div><div class="modal-subtitle">${ms.name}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Task Name</label><input class="form-input" id="et-name" value="${t.name}"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="et-owner" value="${t.owner||''}"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="et-due" type="date" value="${t.due||''}"/></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="et-pri"><option ${t.priority==='P1'?'selected':''}>P1</option><option ${t.priority==='P2'?'selected':''}>P2</option><option ${t.priority==='P3'?'selected':''}>P3</option></select></div><div class="form-group"><label class="form-label">Status</label><select class="form-select" id="et-status">${statusOpts}</select></div></div>
+    <div id="et-blocker-section">
+      ${t.blocker?`<div class="form-group" id="et-blocker-display"><label class="form-label" style="color:var(--red)">Active Blocker</label><div style="background:var(--red-bg);border:1px solid rgba(200,22,29,0.3);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--red)">${t.blocker.title}<br/><span style="color:var(--text3);font-size:11px">${t.blocker.desc||''}</span></div><button class="btn btn-ghost" style="margin-top:6px;font-size:11px" onclick="resolveTaskBlocker('${projId}','${msId}','${taskId}')"><i class="ti ti-check"></i> Resolve blocker</button></div>`:''}
+    </div>
+    ${canEdit&&!t.blocker?`<button class="btn btn-ghost" style="font-size:11px;color:var(--red)" onclick="openAddTaskBlocker('${projId}','${msId}','${taskId}')"><i class="ti ti-alert-triangle"></i> Add Blocker</button>`:''}
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" onclick="deleteTask('${projId}','${msId}','${taskId}')"><i class="ti ti-trash"></i> Delete</button>
+    <button class="btn btn-ghost" onclick="openProjectDetail('${projId}')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEditTask('${projId}','${msId}','${taskId}')"><i class="ti ti-check"></i> Save</button>
+  </div>`,'',true);
+}
+
+async function saveEditTask(projId, msId, taskId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  let newStatus=document.getElementById('et-status').value;
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  ms.tasks=(ms.tasks||[]).map(t=>t.id===taskId?{...t,
+    name:document.getElementById('et-name').value,
+    owner:document.getElementById('et-owner').value,
+    due:document.getElementById('et-due').value,
+    priority:document.getElementById('et-pri').value,
+    status:newStatus
+  }:t);
+  await recalcAndSave(p);
+  showToast('Task updated.'); openProjectDetail(projId);
+}
+
+async function deleteTask(projId, msId, taskId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  if(!confirm('Delete this task?')) return;
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  ms.tasks=(ms.tasks||[]).filter(t=>t.id!==taskId);
+  await recalcAndSave(p);
+  showToast('Task deleted.'); openProjectDetail(projId);
+}
+
+function openAddTask(projId, msId){
+  closeModal();
+  setTimeout(()=>openModal(`
+  <div class="modal-header"><div><div class="modal-title">Add Task</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Task Name *</label><input class="form-input" id="at-name"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="at-owner"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="at-due" type="date"/></div></div>
+    <div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="at-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAddTask('${projId}','${msId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
+}
+
+async function saveAddTask(projId, msId){
+  const name=document.getElementById('at-name').value.trim();
+  if(!name){showToast('Name required.','error');return;}
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  ms.tasks=[...(ms.tasks||[]),{id:'t'+Date.now(),name,status:'not_started',due:document.getElementById('at-due').value,owner:document.getElementById('at-owner').value,priority:document.getElementById('at-pri').value}];
+  await recalcAndSave(p);
+  closeModal(); showToast('Task added.'); openProjectDetail(projId);
+}
+
+// Global new task (from top nav button) — requires milestone selection
+function openNewTask(){
+  if(!canEdit) return;
+  const projsWithMs=projects.filter(p=>(p.milestones||[]).length>0);
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">New Task</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Task Name *</label><input class="form-input" id="nt-name" placeholder="What needs to be done?"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Project</label><select class="form-select" id="nt-proj" onchange="updateNtMilestones()">${projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div><div class="form-group"><label class="form-label">Milestone</label><select class="form-select" id="nt-ms">${projects[0]?(projects[0].milestones||[]).map(m=>`<option value="${m.id}">${m.name}</option>`).join('')||'<option value="">No milestones</option>':'<option value="">Select project first</option>'}</select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="nt-owner" placeholder="Name or initials"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="nt-due" type="date"/></div></div>
+    <div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="nt-pri"><option>P1</option><option selected>P2</option><option>P3</option></select></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveNewTask()"><i class="ti ti-check"></i> Add Task</button></div>`);
+}
+function updateNtMilestones(){
+  const projId=document.getElementById('nt-proj')?.value;
+  const p=projects.find(x=>x.id===projId);
+  const sel=document.getElementById('nt-ms');
+  if(!sel) return;
+  sel.innerHTML=(p?.milestones||[]).map(m=>`<option value="${m.id}">${m.name}</option>`).join('')||'<option value="">No milestones — add one first</option>';
+}
+async function saveNewTask(){
+  const name=document.getElementById('nt-name').value.trim();
+  const projId=document.getElementById('nt-proj').value;
+  const msId=document.getElementById('nt-ms').value;
+  if(!name||!projId||!msId){showToast('Name, project and milestone required.','error');return;}
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms){showToast('Select a valid milestone.','error');return;}
+  ms.tasks=[...(ms.tasks||[]),{id:'t'+Date.now(),name,status:'not_started',due:document.getElementById('nt-due').value,owner:document.getElementById('nt-owner').value,priority:document.getElementById('nt-pri').value}];
+  await recalcAndSave(p);
+  closeModal(); showToast('Task added.');
+}
+
+// ── Blocker management (tied to task or milestone) ────
+function openAddTaskBlocker(projId, msId, taskId){
+  closeModal();
+  setTimeout(()=>openModal(`
+  <div class="modal-header"><div><div class="modal-title">Add Blocker</div><div class="modal-subtitle">Will set task status to Blocked</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="ab-title" placeholder="What is blocked?"/></div>
+    <div class="form-group"><label class="form-label">Detail</label><textarea class="form-textarea" id="ab-desc"></textarea></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner / Resolver</label><input class="form-input" id="ab-owner"/></div><div class="form-group"><label class="form-label">Date Raised</label><input class="form-input" id="ab-date" type="date" value="${new Date().toISOString().split('T')[0]}"/></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveTaskBlocker('${projId}','${msId}','${taskId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
+}
+async function saveTaskBlocker(projId, msId, taskId){
+  const title=document.getElementById('ab-title').value.trim();
+  if(!title){showToast('Title required.','error');return;}
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  ms.tasks=(ms.tasks||[]).map(t=>t.id===taskId?{...t,status:'blocked',blocker:{id:'b'+Date.now(),title,desc:document.getElementById('ab-desc').value,owner:document.getElementById('ab-owner').value,raised:document.getElementById('ab-date').value}}:t);
+  await recalcAndSave(p);
+  updateBadges(); closeModal(); showToast('Blocker added. Task set to Blocked.'); openProjectDetail(projId);
+}
+async function resolveTaskBlocker(projId, msId, taskId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const ms=p.milestones?.find(x=>x.id===msId); if(!ms) return;
+  ms.tasks=(ms.tasks||[]).map(t=>t.id===taskId?{...t,status:'on_track',blocker:null}:t);
+  await recalcAndSave(p);
+  updateBadges(); showToast('Blocker resolved.'); openProjectDetail(projId);
+}
+
+function openAddMsBlocker(projId, msId){
+  closeModal();
+  setTimeout(()=>openModal(`
+  <div class="modal-header"><div><div class="modal-title">Add Milestone Blocker</div><div class="modal-subtitle">Will set milestone status to Blocked</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="ab-title" placeholder="What is blocked?"/></div>
+    <div class="form-group"><label class="form-label">Detail</label><textarea class="form-textarea" id="ab-desc"></textarea></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner / Resolver</label><input class="form-input" id="ab-owner"/></div><div class="form-group"><label class="form-label">Date Raised</label><input class="form-input" id="ab-date" type="date" value="${new Date().toISOString().split('T')[0]}"/></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveMsBlocker('${projId}','${msId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
+}
+async function saveMsBlocker(projId, msId){
+  const title=document.getElementById('ab-title').value.trim();
+  if(!title){showToast('Title required.','error');return;}
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  p.milestones=(p.milestones||[]).map(m=>m.id===msId?{...m,status:'blocked',blocker:{id:'b'+Date.now(),title,desc:document.getElementById('ab-desc').value,owner:document.getElementById('ab-owner').value,raised:document.getElementById('ab-date').value}}:m);
+  await recalcAndSave(p);
+  updateBadges(); closeModal(); showToast('Blocker added. Milestone set to Blocked.'); openProjectDetail(projId);
+}
+async function resolveMsBlocker(projId, msId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  p.milestones=(p.milestones||[]).map(m=>m.id===msId?{...m,status:'on_track',blocker:null}:m);
+  await recalcAndSave(p);
+  updateBadges(); showToast('Blocker resolved.'); openProjectDetail(projId);
+}
+
+// Legacy project-level blocker (keep for backward compat from blockers view)
+function openAddBlocker(projId){
+  closeModal();
+  setTimeout(()=>openModal(`
+  <div class="modal-header"><div><div class="modal-title">Add Project Blocker</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Title *</label><input class="form-input" id="ab-title" placeholder="What is blocked?"/></div>
+    <div class="form-group"><label class="form-label">Detail</label><textarea class="form-textarea" id="ab-desc"></textarea></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner / Resolver</label><input class="form-input" id="ab-owner"/></div><div class="form-group"><label class="form-label">Date Raised</label><input class="form-input" id="ab-date" type="date" value="${new Date().toISOString().split('T')[0]}"/></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAddBlocker('${projId}')"><i class="ti ti-check"></i> Add</button></div>`),150);
+}
+async function saveAddBlocker(projId){
+  const title=document.getElementById('ab-title').value.trim();
+  if(!title){showToast('Title required.','error');return;}
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const blockers=[...(p.blockers||[]),{id:'b'+Date.now(),title,desc:document.getElementById('ab-desc').value,owner:document.getElementById('ab-owner').value,raised:document.getElementById('ab-date').value}];
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({blockers})});
+  p.blockers=blockers; updateBadges(); closeModal(); showToast('Blocker added.'); openProjectDetail(projId);
+}
+async function resolveBlocker(projId,blockerId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const blockers=(p.blockers||[]).filter(b=>b.id!==blockerId);
+  await dbFetch(`projects?id=eq.${projId}`, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({blockers})});
+  p.blockers=blockers; updateBadges(); showToast('Blocker resolved.'); renderView(currentView);
+}
+
+// ── Milestone CRUD ────────────────────────────────────
+// State for expanded milestones in project detail
+const expandedMs={};
+function toggleMs(msId){
+  expandedMs[msId]=!expandedMs[msId];
+  // Re-render milestone section only
+  const el=document.getElementById('ms-section');
+  if(el){const p=projects.find(x=>x.id===el.dataset.pid); if(p) el.innerHTML=renderMsSection(p);}
+}
+
+function openEditMilestone(projId, msId){
+  if(!canEdit) return;
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const m=p.milestones?.find(x=>x.id===msId); if(!m) return;
+  const statusOpts=TASK_STATUSES.map(s=>`<option value="${s}" ${m.status===s?'selected':''}>${statusLabel2(s)}</option>`).join('');
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Edit Milestone</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Milestone Name</label><input class="form-input" id="em-name" value="${m.name}"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="em-owner" value="${m.owner||''}"/></div><div class="form-group"><label class="form-label">Target Date</label><input class="form-input" id="em-date" type="date" value="${m.date||''}"/></div></div>
+    <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="em-status">${statusOpts}</select></div>
+    ${m.blocker?`<div class="form-group"><label class="form-label" style="color:var(--red)">Active Blocker</label><div style="background:var(--red-bg);border:1px solid rgba(200,22,29,0.3);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--red)">${m.blocker.title}</div><button class="btn btn-ghost" style="margin-top:6px;font-size:11px" onclick="resolveMsBlocker('${projId}','${msId}')"><i class="ti ti-check"></i> Resolve blocker</button></div>`:''}
+    ${canEdit&&!m.blocker?`<button class="btn btn-ghost" style="font-size:11px;color:var(--red)" onclick="openAddMsBlocker('${projId}','${msId}')"><i class="ti ti-alert-triangle"></i> Add Blocker</button>`:''}
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" onclick="deleteMilestone('${projId}','${msId}')"><i class="ti ti-trash"></i> Delete</button>
+    <button class="btn btn-ghost" onclick="openProjectDetail('${projId}')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEditMilestone('${projId}','${msId}')"><i class="ti ti-check"></i> Save</button>
+  </div>`,'',true);
+}
+
+async function saveEditMilestone(projId, msId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const newStatus=document.getElementById('em-status').value;
+  p.milestones=(p.milestones||[]).map(m=>m.id===msId?{...m,
+    name:document.getElementById('em-name').value,
+    owner:document.getElementById('em-owner').value,
+    date:document.getElementById('em-date').value,
+    status:newStatus,
+    done:newStatus==='completed'
+  }:m);
+  await recalcAndSave(p);
+  showToast('Milestone updated.'); openProjectDetail(projId);
+}
+
+async function deleteMilestone(projId, msId){
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  if(!confirm('Delete this milestone and all its tasks?')) return;
+  p.milestones=(p.milestones||[]).filter(m=>m.id!==msId);
+  await recalcAndSave(p);
+  showToast('Milestone deleted.'); openProjectDetail(projId);
+}
+
+function openAddMilestone(projId){
+  closeModal();
+  setTimeout(()=>openModal(`
+  <div class="modal-header"><div><div class="modal-title">Add Milestone</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-group"><label class="form-label">Milestone Name *</label><input class="form-input" id="am-name" placeholder="e.g. Phase 1 complete"/></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="am-owner" placeholder="Name or initials"/></div><div class="form-group"><label class="form-label">Target Date *</label><input class="form-input" id="am-date" type="date"/></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveAddMilestone('${projId}')"><i class="ti ti-check"></i> Add</button></div>`,'',true),150);
+}
+
+async function saveAddMilestone(projId){
+  const name=document.getElementById('am-name').value.trim();
+  const date=document.getElementById('am-date').value;
+  if(!name||!date){showToast('Name and date required.','error');return;}
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const milestones=[...(p.milestones||[]),{id:'m'+Date.now(),name,date,owner:document.getElementById('am-owner').value||'',status:'not_started',done:false,tasks:[]}];
+  p.milestones=milestones;
+  await recalcAndSave(p);
+  closeModal(); showToast('Milestone added.'); openProjectDetail(projId);
+}
+
+// ── Milestone section renderer (used in project detail) ─
+function renderMsSection(p){
+  const ms=p.milestones||[];
+  if(ms.length===0) return`<div style="font-size:12px;color:var(--text3);padding:8px 0">No milestones yet.${canEdit?` <button class="btn btn-ghost" style="font-size:11px;margin-top:8px" onclick="openAddMilestone('${p.id}')"><i class="ti ti-plus"></i> Add milestone</button>`:''}</div>`;
+
+  const statusColorMap={not_started:'#9CA3AF',on_track:'var(--green)',at_risk:'var(--amber)',blocked:'var(--red)',completed:'var(--green)'};
+
+  return ms.map(m=>{
+    const isOpen=expandedMs[m.id]!==false; // default open
+    const mPct=calcMilestoneProgress(m);
+    const tasks=m.tasks||[];
+    const statusColor=statusColorMap[m.status||'not_started'];
+    const msClass=msRowClass(m);
+    return`<div class="${msClass}" id="ms-${m.id}">
+      <div class="ms-header" onclick="toggleMs('${m.id}')">
+        <i class="ti ti-chevron-right chevron-icon ${isOpen?'open':''}"></i>
+        <span class="status-dot" style="background:${statusColor}"></span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px">
+            ${m.name}
+            ${m.status==='blocked'?`<span class="badge badge-red" style="font-size:9px">BLOCKED</span>`:''}
+            ${m.status==='completed'?`<span class="badge badge-green" style="font-size:9px">DONE</span>`:''}
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${m.owner?`Owner: ${m.owner} &bull; `:''}${m.date||'No date'} &bull; ${tasks.length} task${tasks.length!==1?'s':''} &bull; ${mPct}% complete</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px" onclick="event.stopPropagation()">
+          <div style="width:60px"><div class="progress-bar" style="height:5px"><div class="progress-fill ${m.status==='completed'?'green':m.status==='blocked'?'':''}" style="width:${mPct}%;background:${m.status==='blocked'?'var(--red)':m.status==='completed'?'var(--green)':'var(--blue)'}"></div></div></div>
+          ${canEdit?`<button class="icon-btn" style="width:22px;height:22px" onclick="openEditMilestone('${p.id}','${m.id}')"><i class="ti ti-edit" style="font-size:12px"></i></button>`:''}
+        </div>
+      </div>
+      ${isOpen?`
+      ${m.blocker?`<div style="margin:0 12px 8px;background:var(--red-bg);border:1px solid rgba(200,22,29,0.3);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--red)"><i class="ti ti-alert-triangle"></i> <strong>${m.blocker.title}</strong> — ${m.blocker.desc||''} ${canEdit?`<button class="btn btn-ghost" style="font-size:10px;padding:2px 8px;margin-left:6px" onclick="resolveMsBlocker('${p.id}','${m.id}')">Resolve</button>`:''}</div>`:''}
+      <div class="ms-tasks">
+        ${tasks.length===0?`<div style="font-size:11px;color:var(--text3);padding:4px 0">No tasks — ${canEdit?`<span style="cursor:pointer;color:var(--blue);text-decoration:underline" onclick="openAddTask('${p.id}','${m.id}')">add one</span>`:'none yet'}.</div>`:tasks.map(t=>{
+          const tClass=taskRowClass(t);
+          const tColor=statusColorMap[t.status||'not_started'];
+          return`<div class="${tClass}">
+            <span class="status-dot" style="background:${tColor}"></span>
+            <div class="task-name" style="color:${t.status==='completed'?'var(--text3)':'var(--text)'}${t.status==='completed'?';text-decoration:line-through':''}">${t.name}</div>
+            ${t.blocker?`<span class="badge badge-red" style="font-size:9px;flex-shrink:0">BLOCKED</span>`:''}
+            ${priBadge(t.priority)}
+            <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;flex-shrink:0;min-width:60px;text-align:right">${t.owner||''}</div>
+            <div style="font-size:10px;color:${isOverdue(t.due)&&t.status!=='completed'?'var(--red)':'var(--text3)'};font-family:'DM Mono',monospace;flex-shrink:0;min-width:70px;text-align:right">${t.due||''}</div>
+            ${canEdit?`<button class="icon-btn" style="width:22px;height:22px;flex-shrink:0" onclick="openEditTask('${p.id}','${m.id}','${t.id}')"><i class="ti ti-edit" style="font-size:12px"></i></button>`:''}
+          </div>`;
+        }).join('')}
+        ${canEdit?`<button class="btn btn-ghost" style="margin-top:6px;font-size:11px;width:100%;justify-content:center" onclick="openAddTask('${p.id}','${m.id}')"><i class="ti ti-plus"></i> Add Task</button>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('')+
+  (canEdit?`<button class="btn btn-ghost" style="margin-top:8px;font-size:11px;width:100%;justify-content:center" onclick="openAddMilestone('${p.id}')"><i class="ti ti-plus"></i> Add Milestone</button>`:'');
+}
+
+function openEditKPI(kpiId,currentVal){
+  const def=KPI_DEFS.find(k=>k.id===kpiId);
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Update KPI</div><div class="modal-subtitle">${def?.name}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body"><div class="form-group"><label class="form-label">Current Value (${def?.unit})</label><input class="form-input" id="kpi-val" type="number" step="0.1" value="${currentVal}"/><div class="form-hint">Target: ${def?.target}${def?.unit}</div></div></div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveKPI('${kpiId}')"><i class="ti ti-check"></i> Update</button></div>`);
+}
+
+async function saveKPI(kpiId){
+  const val=parseFloat(document.getElementById('kpi-val').value);
+  if(isNaN(val)){showToast('Enter a valid number.','error');return;}
+  const updates={id:'main',[kpiId]:val};
+  await dbFetch('kpi_values', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}, body:JSON.stringify(updates)});
+  kpiValues[kpiId]=val; closeModal(); showToast('KPI updated.'); renderView('kpis');
+}
+
+function openEditUser(uid,canEditCurrent,isAdminCurrent,name='',role='',region='',portalAccess='portfolio',dept=''){
+  openModal(`
+  <div class="modal-header"><div><div class="modal-title">Edit User</div><div class="modal-subtitle">${name||'User'}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+  <div class="modal-body">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="eu-name" value="${name}"/></div>
+      <div class="form-group"><label class="form-label">Role / Title</label><input class="form-input" id="eu-role" value="${role}"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Department</label><select class="form-select" id="eu-dept"><option value="">— Select —</option><option value="GCC">GCC</option><option value="CSM">CSM</option><option value="PS">PS</option><option value="CS Ops">CS Ops</option><option value="GCC Ops">GCC Ops</option><option value="GPT">GPT</option><option value="Pre-Sales">Pre-Sales</option><option value="Sales">Sales</option><option value="Marketing">Marketing</option><option value="Account Manager">Account Manager</option><option value="Partner Support">Partner Support</option><option value="Global Advisory">Global Advisory</option></select></div>
+      <div class="form-group"><label class="form-label">Region</label><select class="form-select" id="eu-region"><option value="">— Select —</option><option ${region==='Global'?'selected':''}>Global</option><option ${region==='US'?'selected':''}>US</option><option ${region==='EU'?'selected':''}>EU</option><option ${region==='EMEA'?'selected':''}>EMEA</option><option ${region==='APAC'?'selected':''}>APAC</option><option ${region==='LATAM'?'selected':''}>LATAM</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Portal Access</label><select class="form-select" id="eu-portal"><option value="portfolio" ${portalAccess==='portfolio'?'selected':''}>Portfolio only</option><option value="elt" ${portalAccess==='elt'?'selected':''}>ELT only</option><option value="both" ${portalAccess==='both'?'selected':''}>Both portals</option></select></div>
+      <div class="form-group"><label class="form-label">Access Level</label><select class="form-select" id="eu-access">
+        <option value="viewer" ${!canEditCurrent&&!isAdminCurrent?'selected':''}>Viewer</option>
+        <option value="editor" ${canEditCurrent&&!isAdminCurrent?'selected':''}>Editor</option>
+        <option value="portal_admin" ${isAdminCurrent&&portalAccess!=='both'?'selected':''}>Portal Admin</option>
+        <option value="superadmin" ${isAdminCurrent&&portalAccess==='both'?'selected':''}>Superadmin</option>
+      </select></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveUserAccess('${uid}')"><i class="ti ti-check"></i> Save</button></div>`);
+  // Set department after modal renders
+  setTimeout(()=>{ const s=document.getElementById('eu-dept'); if(s&&dept) s.value=dept; },50);
+}
+
+function openInviteUser(){
+  if(!userProfile?.is_admin) return;
+  openModal(`
+  <div class="modal-header">
+    <div><div class="modal-title">Add User</div><div class="modal-subtitle">Create a new account. Share credentials securely — user will be prompted to change password on first login.</div></div>
+    <button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="modal-body">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" id="iu-name" placeholder="e.g. Sarah Chen"/></div>
+      <div class="form-group"><label class="form-label">Email *</label><input class="form-input" id="iu-email" type="email" placeholder="user@company.com"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Temporary Password *</label><input class="form-input" id="iu-pass" type="text" placeholder="Min 8 characters"/></div>
+      <div class="form-group"><label class="form-label">Role / Title</label><input class="form-input" id="iu-role" placeholder="e.g. Regional Manager"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Department</label><select class="form-select" id="iu-dept"><option value="">— Select —</option><option value="GCC">GCC</option><option value="CSM">CSM</option><option value="PS">PS</option><option value="CS Ops">CS Ops</option><option value="GCC Ops">GCC Ops</option><option value="GPT">GPT</option><option value="Pre-Sales">Pre-Sales</option><option value="Sales">Sales</option><option value="Marketing">Marketing</option><option value="Account Manager">Account Manager</option><option value="Partner Support">Partner Support</option><option value="Global Advisory">Global Advisory</option></select></div>
+      <div class="form-group"><label class="form-label">Region</label><select class="form-select" id="iu-region"><option value="">— Select —</option><option>Global</option><option>US</option><option>EU</option><option>EMEA</option><option>APAC</option><option>LATAM</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Portal Access</label><select class="form-select" id="iu-portal"><option value="portfolio">Portfolio only</option><option value="elt">ELT only</option><option value="both">Both portals</option></select></div>
+      <div class="form-group"><label class="form-label">Access Level</label><select class="form-select" id="iu-access"><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="portal_admin">Portal Admin</option><option value="superadmin">Superadmin</option></select></div>
+    </div>
+    <div id="iu-error" style="display:none;background:var(--red-bg);border:1px solid rgba(239,83,80,.3);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--red);margin-top:4px"></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" id="iu-btn" onclick="saveInviteUser()"><i class="ti ti-user-plus"></i> Create Account</button>
+  </div>`);
+}
+
+async function saveInviteUser(){
+  const name=document.getElementById('iu-name').value.trim();
+  const email=document.getElementById('iu-email').value.trim();
+  const pass=document.getElementById('iu-pass').value;
+  const role=document.getElementById('iu-role').value;
+  const region=document.getElementById('iu-region').value;
+  const level=document.getElementById('iu-access').value;
+  const errEl=document.getElementById('iu-error');
+  const btn=document.getElementById('iu-btn');
+  errEl.style.display='none';
+  if(!name||!email||!pass){errEl.textContent='Name, email and password are required.';errEl.style.display='block';return;}
+  if(pass.length<8){errEl.textContent='Password must be at least 8 characters.';errEl.style.display='block';return;}
+  btn.disabled=true; btn.textContent='Creating...';
+  // Use Supabase Auth Admin API via service role — falls back to signup if not available
+  const portal=document.getElementById('iu-portal')?.value||'portfolio';
+  const dept=document.getElementById('iu-dept')?.value||'';
+  const isSA=level==='superadmin'; const isPA=level==='portal_admin';
+  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name,role}}});
+  if(error){
+    errEl.textContent='Error: '+error.message;
+    errEl.style.display='block';
+    btn.disabled=false; btn.innerHTML='<i class="ti ti-user-plus"></i> Create Account';
+    return;
+  }
+  const uid=data?.user?.id;
+  if(uid){
+    const initials=name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    await dbFetch('profiles', {
+      method:'POST', prefer:'return=minimal',
+      body:JSON.stringify({id:uid,email,name,role,region,department:dept,initials,
+        portal_access:isSA?'both':portal,
+        can_edit:level==='editor'||isPA||isSA,
+        is_admin:isPA||isSA,
+        must_change_password:true})
+    });
+  }
+  closeModal();
+  showToast(`Account created for ${name}. Share credentials securely.`);
+  renderView('team');
+}
+
+async function saveUserAccess(uid){
+  const name=document.getElementById('eu-name')?.value||'';
+  const role=document.getElementById('eu-role')?.value||'';
+  const region=document.getElementById('eu-region')?.value||'';
+  const dept=document.getElementById('eu-dept')?.value||'';
+  const level=document.getElementById('eu-access').value;
+  const portal=document.getElementById('eu-portal')?.value||'portfolio';
+  const isSA=level==='superadmin';
+  const isPA=level==='portal_admin';
+  const updates={
+    can_edit:level==='editor'||isPA||isSA,
+    is_admin:isPA||isSA,
+    portal_access:isSA?'both':portal
+  };
+  if(name) updates.name=name;
+  if(role) updates.role=role;
+  if(region) updates.region=region;
+  if(dept) updates.department=dept;
+  await dbFetch('profiles?id=eq.'+uid, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify(updates)});
+  closeModal(); showToast('User updated.'); renderView('team');
+}
+
+async function deleteUser(uid, name){
+  if(!confirm(`Remove ${name} from the team? This will delete their profile but not their login account.`)) return;
+  await dbFetch(`profiles?id=eq.${uid}`, {method:'DELETE'});
+  showToast(`${name} removed.`); renderView('team');
+}
+
+// ── Modal / Toast ─────────────────────────────────────
+function openModal(html,extraClass='',locked=false){
+  document.getElementById('modal-inner').className=`modal ${extraClass}`;
+  document.getElementById('modal-inner').innerHTML=html;
+  document.getElementById('modal-overlay').style.display='flex';
+  // Never close on outside click — use X or Cancel buttons only
+}
+function closeModal(){
+  document.getElementById('modal-overlay').style.display='none';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  const icon=type==='error'?'ti-alert-circle':'ti-circle-check';
+  const color=type==='error'?'var(--red)':'var(--green)';
+  t.innerHTML=`<i class="ti ${icon}" style="color:${color};font-size:16px"></i> ${msg}`;
+  t.style.display='flex'; clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.style.display='none',3000);
+}
+
+document.getElementById('login-btn').addEventListener('click', handleLogin);
+</script>
+</body>
+</html>
