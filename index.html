@@ -648,43 +648,68 @@ async function saveNewPassword(){
   if(pass!==confirm){errEl.textContent='Passwords do not match.';errEl.style.display='block';return;}
   const btn=document.getElementById('cp-save-btn');
   if(btn){btn.disabled=true;btn.textContent='Saving...';}
-  // Step 1: Update auth password
-  const {error}=await sb.auth.updateUser({password:pass});
-  if(error){
-    errEl.textContent='Error updating password: '+error.message;
+
+  // Step 1: Update Supabase Auth password
+  const {error:authError}=await sb.auth.updateUser({password:pass});
+  if(authError){
+    errEl.textContent='Error updating password: '+authError.message;
     errEl.style.display='block';
     if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Set Password';}
     return;
   }
-  // Step 2: Clear the flag in profiles — try both anon REST and Supabase client
+
+  // Step 2: Get the fresh session token and use it to PATCH profiles
+  // The session token is required — anon key does not have write access to profiles rows
   let flagCleared=false;
   try {
-    const res=await fetch(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+currentUser.id, {
-      method:'PATCH',
-      headers:{
-        'apikey':SUPABASE_ANON_KEY,
-        'Authorization':'Bearer '+(await sb.auth.getSession())?.data?.session?.access_token||SUPABASE_ANON_KEY,
-        'Content-Type':'application/json',
-        'Prefer':'return=minimal'
-      },
-      body:JSON.stringify({must_change_password:false})
-    });
-    if(res.ok||res.status===204) flagCleared=true;
-  } catch(e){ console.warn('Profile PATCH failed:',e); }
-  if(!flagCleared){
-    // Fallback: use Supabase JS client
-    try {
-      const {error:e2}=await sb.from('profiles').update({must_change_password:false}).eq('id',currentUser.id);
-      if(!e2) flagCleared=true;
-    } catch(e){ console.warn('Supabase client PATCH also failed:',e); }
+    const sessionData=await sb.auth.getSession();
+    const token=sessionData?.data?.session?.access_token;
+    if(token){
+      const res=await fetch(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+currentUser.id,{
+        method:'PATCH',
+        headers:{
+          'apikey':SUPABASE_ANON_KEY,
+          'Authorization':'Bearer '+token,
+          'Content-Type':'application/json',
+          'Prefer':'return=minimal'
+        },
+        body:JSON.stringify({must_change_password:false})
+      });
+      console.log('Profile PATCH status:',res.status);
+      if(res.ok||res.status===204) flagCleared=true;
+      else {
+        const body=await res.text();
+        console.warn('Profile PATCH error body:',body);
+      }
+    } else {
+      console.warn('No session token available for profile PATCH');
+    }
+  } catch(e){
+    console.warn('Profile PATCH exception:',e);
   }
+
+  // Step 3: If REST PATCH failed, try Supabase JS client as fallback
   if(!flagCleared){
-    errEl.textContent='Password was updated but we could not save your profile flag. Please contact your admin to clear the must_change_password flag on your account.';
+    try {
+      const {error:dbError}=await sb.from('profiles')
+        .update({must_change_password:false})
+        .eq('id',currentUser.id);
+      if(!dbError){ flagCleared=true; console.log('Profile flag cleared via Supabase JS client'); }
+      else console.warn('Supabase JS client PATCH error:',dbError);
+    } catch(e){
+      console.warn('Supabase JS client exception:',e);
+    }
+  }
+
+  // Step 4: If both failed, show error — do not silently proceed
+  if(!flagCleared){
+    errEl.textContent='Your password was updated but the profile flag could not be cleared. Please ask your admin to set must_change_password = false on your account in the database.';
     errEl.style.display='block';
     if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Set Password';}
     return;
   }
-  // Step 3: Update local state
+
+  // Step 5: Update local state and close
   if(userProfile) userProfile.must_change_password=false;
   sessionStorage.removeItem('pw-prompt-shown');
   closeModal();
