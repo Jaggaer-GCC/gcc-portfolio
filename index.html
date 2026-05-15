@@ -111,6 +111,14 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--content-
 .type-chip{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .12s;font-family:'DM Sans',sans-serif;user-select:none}
 .type-chip:hover{background:var(--surface2)}
 .type-chip.active{background:rgba(200,22,29,0.08);border-color:rgba(200,22,29,0.3);color:#C8161D}
+/* Notes feed */
+.note-entry{padding:10px 12px;border-left:2px solid var(--border);margin-bottom:8px;background:var(--surface2);border-radius:0 6px 6px 0}
+.note-entry:first-child{border-left-color:var(--blue)}
+.note-meta{font-size:10px;color:var(--text3);margin-bottom:3px}
+.note-text{font-size:12px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word}
+/* KPI chart */
+.kpi-chart-wrap{border-radius:10px;padding:16px 14px 10px;margin-top:12px;overflow:hidden;background:var(--surface2);border:1px solid var(--border)}
+.kpi-chart-wrap svg{display:block;width:100%;overflow:visible}
 .data-table{background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-lg);overflow:hidden}
 .table-head{display:grid;padding:9px 16px;background:#F9FAFB;border-bottom:1px solid var(--card-border)}
 .th{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
@@ -404,7 +412,7 @@ const KPI_DEFS = [
 const KPI_DEFAULTS = {sla:88,fcr:64,csat:3.9,deflect:18,ttr:61,esc:8};
 
 let currentUser=null, userProfile=null, canEdit=false;
-let projects=[], kpiValues={...KPI_DEFAULTS};
+let projects=[], kpiValues={...KPI_DEFAULTS}, kpiHistory={};
 let currentView='dashboard', filterProjects='All', filterTasks='open';
 let filterProjTypes=[], sortProjects='name'; // multi-type filter for projects
 let taskFilters={owner:'',project:'',dateFrom:'',dateTo:'',sort:'priority'};
@@ -577,6 +585,14 @@ async function loadData(){
     const kpi = await dbFetch('kpi_values?id=eq.main&limit=1');
     if(kpi && kpi.length > 0) kpiValues={...KPI_DEFAULTS,...kpi[0]};
   } catch(e){ console.warn('KPI error:', e); }
+  try {
+    const hist = await dbFetch('kpi_history?order=recorded_at.asc&limit=500');
+    kpiHistory={};
+    (hist||[]).forEach(r=>{
+      if(!kpiHistory[r.kpi_id]) kpiHistory[r.kpi_id]=[];
+      kpiHistory[r.kpi_id].push({value:r.value, date:r.recorded_at?.split('T')[0]||r.recorded_at});
+    });
+  } catch(e){ console.warn('KPI history error (table may not exist yet):', e); }
 }
 
 function showApp(){
@@ -683,7 +699,12 @@ const ragDot=r=>`<span class="rag ${r==='G'?'rag-g':r==='A'?'rag-a':'rag-r'}"></
 const statusLabel=p=>p.status==='Completed'?'Completed':p.status==='Planning'?'Planning':p.rag==='G'?'On Track':p.rag==='A'?'At Risk':'Off Track';
 const statusBadge=p=>`<span class="badge ${p.status==='Completed'?'badge-green':p.status==='Planning'?'badge-purple':ragCls(p.rag)}">${statusLabel(p)}</span>`;
 const typeColors={Strategic:'badge-blue',Operational:'badge-teal',Process:'badge-gray',Transformation:'badge-red',Workforce:'badge-purple',Quality:'badge-green',Revenue:'badge-purple'};
-const typeBadge=t=>{const arr=Array.isArray(t)?t:[t];return arr.filter(Boolean).map(v=>`<span class="badge ${typeColors[v]||'badge-gray'}">${v}</span>`).join(' ');};
+const typeBadge=t=>{
+  let arr=Array.isArray(t)?t:(t?String(t).split(','):[]);
+  arr=arr.map(v=>(v||'').trim()).filter(Boolean);
+  if(arr.length===0) return'';
+  return arr.map(v=>`<span class="badge ${typeColors[v]||'badge-gray'}">${v}</span>`).join(' ');
+};
 const priBadge=p=>p==='P1'?`<span class="badge badge-red">${p}</span>`:`<span class="badge badge-gray">${p}</span>`;
 const isOverdue=d=>d&&new Date(d)<new Date();
 const daysUntil=d=>Math.ceil((new Date(d)-new Date())/86400000);
@@ -725,7 +746,7 @@ async function renderProjects(){
   const types=['Strategic','Operational','Process','Transformation','Workforce','Quality','Revenue'];
   // Multi-type filter
   let filtered=filterProjTypes.length===0?projects:projects.filter(p=>{
-    const pt=Array.isArray(p.type)?p.type:[p.type];
+    const pt=Array.isArray(p.type)?p.type:String(p.type||'').split(',').map(s=>s.trim());
     return filterProjTypes.some(t=>pt.includes(t));
   });
   // Sort
@@ -775,7 +796,7 @@ function renderProjectTable(list){
       const days=daysUntil(p.due);
       return`<div class="table-row" style="grid-template-columns:${cols}" onclick="openProjectDetail('${p.id}')">
         <div><div class="row-primary">${p.name}</div><div class="row-secondary">${p.region||''} &bull; ${p.impact||''} impact &bull; ${done}/${tot} milestones</div></div>
-        <div>${typeBadge(p.type)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">${typeBadge(p.type)}</div>
         <div style="display:flex;align-items:center;gap:6px">${ragDot(p.rag)}${statusBadge(p)}</div>
         <div><div class="owner-chip"><div class="owner-av">${p.owner||'?'}</div>${p.owner||'—'}</div></div>
         <div style="font-size:11px;font-family:'DM Mono',monospace;color:${days<14&&p.status!=='Completed'?'var(--amber)':'var(--text2)'}">${p.due||'—'}</div>
@@ -799,7 +820,7 @@ function openProjectDetail(id){
   <div class="detail-header" style="display:flex;align-items:flex-start;justify-content:space-between">
     <div>
       <div class="detail-title">${p.name}</div>
-      <div class="detail-badges">${statusBadge(p)} ${typeBadge(p.type)} ${priBadge(p.priority)} <span class="badge badge-gray">${p.region||''}</span></div>
+      <div class="detail-badges" style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">${statusBadge(p)} ${typeBadge(p.type)} ${priBadge(p.priority)} <span class="badge badge-gray">${p.region||''}</span></div>
     </div>
     <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px">
       ${canEdit?`<button class="btn btn-ghost" style="font-size:11px" onclick="openEditProject('${id}')"><i class="ti ti-edit"></i> Edit</button>`:''}
@@ -839,6 +860,17 @@ function openProjectDetail(id){
         <div class="meta-label" style="margin-bottom:8px;color:${(p.blockers||[]).length>0?'var(--red)':'var(--text3)'}">Project Blockers (${(p.blockers||[]).length})</div>
         ${(p.blockers||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No project-level blockers.</div>':(p.blockers||[]).map(b=>`<div style="background:var(--red-bg);border:1px solid rgba(239,83,80,.2);border-radius:6px;padding:8px 10px;margin-bottom:6px"><div style="font-size:12px;color:var(--red);font-weight:600">${b.title}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${b.desc}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Owner: ${b.owner} &bull; Raised: ${b.raised}</div>${canEdit?`<button class="btn btn-ghost" style="margin-top:6px;font-size:10px" onclick="resolveBlocker('${id}','${b.id}')"><i class="ti ti-check"></i> Resolve</button>`:''}</div>`).join('')}
         ${canEdit?`<button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="openAddBlocker('${id}')"><i class="ti ti-plus"></i> Add project blocker</button>`:''}
+      </div>
+      <div class="sp-panel">
+        <div class="meta-label" style="margin-bottom:8px"><i class="ti ti-notes" style="font-size:12px"></i> Project Notes</div>
+        <div id="notes-feed-${id}" style="max-height:260px;overflow-y:auto;margin-bottom:10px">
+          ${(p.notes||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No notes yet.</div>':
+          [...(p.notes||[])].reverse().map(n=>`<div class="note-entry"><div class="note-meta">${n.author} &bull; ${n.ts}</div><div class="note-text">${n.text.replace(/</g,'&lt;')}</div></div>`).join('')}
+        </div>
+        ${canEdit?`<div style="display:flex;flex-direction:column;gap:6px">
+          <textarea id="note-input-${id}" class="form-textarea" rows="2" placeholder="Add a note..." style="font-size:12px;resize:vertical;min-height:52px"></textarea>
+          <button class="btn btn-ghost" style="font-size:11px;align-self:flex-end" onclick="addProjectNote('${id}')"><i class="ti ti-send"></i> Add Note</button>
+        </div>`:''}
       </div>
     </div>
   </div>`,'modal-wide');
@@ -997,22 +1029,174 @@ async function renderMilestones(){
 
 // ── KPIs ──────────────────────────────────────────────
 async function renderKPIs(){
+  const allTargets={};
+  projects.forEach(p=>{
+    Object.entries(p.kpi_targets||{}).forEach(([kid,v])=>{
+      if(!allTargets[kid]) allTargets[kid]=[];
+      if(v.baseline!=null) allTargets[kid].push({pname:p.name,baseline:v.baseline,target:v.target});
+    });
+  });
+
   return`
-  <div style="margin-bottom:20px"><div class="section-title" style="margin-bottom:4px">GCC KPI Tracker</div><div style="font-size:12px;color:var(--text3)">Current performance vs targets.</div></div>
+  <div style="margin-bottom:24px">
+    <div class="section-title" style="margin-bottom:4px">GCC KPI Tracker</div>
+    <div style="font-size:12px;color:var(--text3)">Current performance vs targets. Update weekly to track week-over-week progress.</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px">
   ${KPI_DEFS.map(k=>{
     const v=kpiValues[k.id]??KPI_DEFAULTS[k.id];
-    const ot=onTrack(k,v);const color=ot?'var(--green)':'var(--amber)';
+    const ot=onTrack(k,v);
+    const color=ot?'#059669':'#C8161D';
+    const colorVar=ot?'var(--green)':'var(--red)';
     const linked=projects.filter(p=>(p.kpis||[]).includes(k.id));
-    return`<div class="panel" style="margin-bottom:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div><div style="font-size:14px;font-weight:600;color:var(--text)">${k.name}</div><div style="font-size:11px;color:var(--text3)">Target: ${k.target}${k.unit} &bull; ${k.higher?'Higher is better':'Lower is better'}</div></div>
-        <div style="text-align:right"><div style="font-size:26px;font-weight:600;color:${color};font-family:'DM Mono',monospace">${v}${k.unit}</div><div style="font-size:10px;color:${color};font-weight:600">${ot?'ON TRACK':'NEEDS ATTENTION'}</div></div>
+    const hist=kpiHistory[k.id]||[];
+    const projTargets=allTargets[k.id]||[];
+    const baseline=projTargets[0]?.baseline??null;
+    // Delta from previous week
+    const prev=hist.length>=2?hist[hist.length-2].value:null;
+    const delta=prev!=null?+(v-prev).toFixed(1):null;
+    const deltaGood=k.higher?(delta>0):(delta<0);
+    const deltaStr=delta!=null?(delta>0?`+${delta}`:delta===0?'—':`${delta}`):'—';
+    return`<div class="panel" style="padding:18px 20px;display:flex;flex-direction:column;gap:0">
+      <!-- Header row -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">${k.name}</div>
+          <div style="font-size:10px;color:var(--text3)">Target ${k.target}${k.unit} &bull; ${k.higher?'↑ higher':'↓ lower'} is better</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:12px">
+          <div style="font-size:28px;font-weight:700;color:${colorVar};font-family:'DM Mono',monospace;line-height:1">${v}${k.unit}</div>
+          <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:4px">
+            ${delta!=null?`<span style="font-size:11px;font-weight:600;color:${deltaGood?'#059669':'#C8161D'};font-family:'DM Mono',monospace">${deltaGood?'▲':'▼'} ${Math.abs(delta)}${k.unit} WoW</span>`:''}
+            <span style="font-size:9px;font-weight:700;letter-spacing:.04em;color:${colorVar};background:${ot?'rgba(5,150,105,0.08)':'rgba(200,22,29,0.08)'};padding:2px 7px;border-radius:20px">${ot?'ON TRACK':'NEEDS ATTENTION'}</span>
+          </div>
+        </div>
       </div>
-      <div class="progress-bar" style="height:8px;margin-bottom:12px"><div class="progress-fill" style="width:${pctBar(k,v)}%;background:${color}"></div></div>
-      ${linked.length>0?`<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Linked projects</div><div style="display:flex;gap:6px;flex-wrap:wrap">${linked.map(p=>`<span class="badge ${ragCls(p.rag)}" onclick="openProjectDetail('${p.id}')" style="cursor:pointer">${p.name}</span>`).join('')}</div>`:`<div style="font-size:11px;color:var(--text3)">No projects linked to this KPI.</div>`}
-      ${canEdit?`<button class="btn btn-ghost" style="margin-top:10px;font-size:11px" onclick="openEditKPI('${k.id}','${v}')"><i class="ti ti-edit"></i> Update value</button>`:''}
+      <!-- Chart -->
+      <div class="kpi-chart-wrap">
+        ${hist.length>=2
+          ? renderKpiSparkline(k, hist, baseline, color)
+          : `<div style="height:90px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px">
+               <i class="ti ti-chart-line" style="font-size:22px;color:var(--border)"></i>
+               <div style="font-size:11px;color:var(--text3)">Record at least 2 updates to see trend</div>
+             </div>`}
+      </div>
+      <!-- Baseline strip -->
+      ${baseline!=null?`<div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
+        <div style="width:12px;height:2px;background:#9CA3AF;border-radius:1px;flex-shrink:0"></div>
+        <div style="font-size:11px;color:var(--text3)">Baseline <strong style="color:var(--text2)">${baseline}${k.unit}</strong></div>
+        <div style="width:1px;height:12px;background:var(--border)"></div>
+        <div style="font-size:11px;color:var(--text3)">Improvement <strong style="color:${colorVar}">${k.higher?(v-baseline>=0?'+':'')+(v-baseline).toFixed(1):((v-baseline)*-1>=0?'+':'')+((v-baseline)*-1).toFixed(1)}${k.unit}</strong></div>
+        ${hist.length>0?`<div style="width:1px;height:12px;background:var(--border)"></div><div style="font-size:11px;color:var(--text3)">${hist.length}w of data</div>`:''}
+      </div>`:''}
+      <!-- Linked projects -->
+      ${linked.length>0?`<div style="margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--text3)">Projects:</span>
+        ${linked.map(p=>`<span class="badge ${ragCls(p.rag)}" onclick="openProjectDetail('${p.id}')" style="cursor:pointer;font-size:10px">${p.name}</span>`).join('')}
+      </div>`:''}
+      <!-- Actions -->
+      ${canEdit?`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+        <button class="btn btn-ghost" style="font-size:11px" onclick="openEditKPI('${k.id}','${v}')"><i class="ti ti-pencil" style="font-size:12px"></i> Update value</button>
+      </div>`:''}
     </div>`;
-  }).join('')}`;
+  }).join('')}
+  </div>`;
+}
+
+function renderKpiSparkline(k, hist, baseline, lineColor){
+  const W=500, H=110;
+  const PAD={t:14, r:16, b:28, l:44};
+  const iW=W-PAD.l-PAD.r, iH=H-PAD.t-PAD.b;
+
+  const vals=hist.map(h=>h.value);
+  // Include target and baseline in Y range so they always fit
+  const allVals=[...vals, k.target, ...(baseline!=null?[baseline]:[])];
+  const rawMin=Math.min(...allVals), rawMax=Math.max(...allVals);
+  const pad=(rawMax-rawMin)*0.15||1;
+  const minV=rawMin-pad, maxV=rawMax+pad;
+  const range=maxV-minV;
+
+  const xPos=i=>PAD.l+(i/(Math.max(hist.length-1,1)))*iW;
+  const yPos=v=>PAD.t+iH-((v-minV)/range)*iH;
+
+  // Smooth bezier path using cardinal spline
+  function smoothPath(points){
+    if(points.length<2) return '';
+    let d=`M ${points[0][0]},${points[0][1]}`;
+    for(let i=0;i<points.length-1;i++){
+      const x0=i>0?points[i-1][0]:points[i][0];
+      const y0=i>0?points[i-1][1]:points[i][1];
+      const x1=points[i][0], y1=points[i][1];
+      const x2=points[i+1][0], y2=points[i+1][1];
+      const x3=i<points.length-2?points[i+2][0]:x2;
+      const y3=i<points.length-2?points[i+2][1]:y2;
+      const t=0.4;
+      const cp1x=x1+(x2-x0)*t, cp1y=y1+(y2-y0)*t;
+      const cp2x=x2-(x3-x1)*t, cp2y=y2-(y3-y1)*t;
+      d+=` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x2},${y2}`;
+    }
+    return d;
+  }
+
+  const pts=hist.map((h,i)=>[xPos(i),yPos(h.value)]);
+  const linePath=smoothPath(pts);
+
+  // Area path: same curve but closed at bottom
+  const areaPath=linePath+` L ${pts[pts.length-1][0]},${PAD.t+iH} L ${pts[0][0]},${PAD.t+iH} Z`;
+
+  // Target line Y
+  const ty=yPos(k.target);
+  const by=baseline!=null?yPos(baseline):null;
+
+  // Gradient ID (unique per KPI)
+  const gid=`grad_${k.id}`;
+  const gridColor='#E5E7EB';
+
+  // Y-axis: 3 evenly spaced labels
+  const yTicks=3;
+  const yLabels=Array.from({length:yTicks},(_,i)=>{
+    const frac=i/(yTicks-1);
+    const val=+(minV+frac*range).toFixed(1);
+    const y=PAD.t+iH-(frac*iH);
+    return`<line x1="${PAD.l}" y1="${y}" x2="${PAD.l+iW}" y2="${y}" stroke="${gridColor}" stroke-width="0.5"/>
+    <text x="${PAD.l-6}" y="${y+3.5}" text-anchor="end" font-size="9" fill="#9CA3AF">${val}</text>`;
+  }).join('');
+
+  // X-axis: first, middle, last date
+  const xIdx=[0,Math.floor((hist.length-1)/2),hist.length-1].filter((v,i,a)=>a.indexOf(v)===i);
+  const xLabels=xIdx.map(i=>`<text x="${xPos(i)}" y="${H-6}" text-anchor="middle" font-size="9" fill="#9CA3AF">${hist[i].date?.slice(5)||''}</text>`).join('');
+
+  // Last value callout
+  const lastX=pts[pts.length-1][0], lastY=pts[pts.length-1][1];
+
+  return`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="height:${H}px">
+    <defs>
+      <linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="${lineColor}" stop-opacity="0.01"/>
+      </linearGradient>
+      <clipPath id="clip_${k.id}">
+        <rect x="${PAD.l}" y="${PAD.t}" width="${iW}" height="${iH}"/>
+      </clipPath>
+    </defs>
+    <!-- Y grid + labels -->
+    ${yLabels}
+    <!-- Baseline -->
+    ${by!=null?`<line x1="${PAD.l}" y1="${by}" x2="${PAD.l+iW}" y2="${by}" stroke="#9CA3AF" stroke-width="1" stroke-dasharray="3,4"/>
+    <text x="${PAD.l+4}" y="${by-4}" font-size="9" fill="#9CA3AF">baseline</text>`:''}
+    <!-- Target line -->
+    ${ty>=PAD.t-2&&ty<=PAD.t+iH+2?`<line x1="${PAD.l}" y1="${ty}" x2="${PAD.l+iW}" y2="${ty}" stroke="${lineColor}" stroke-width="1" stroke-dasharray="5,4" opacity="0.45"/>
+    <text x="${PAD.l+iW-2}" y="${ty-4}" text-anchor="end" font-size="9" fill="${lineColor}" opacity="0.7">target ${k.target}${k.unit}</text>`:''}
+    <!-- Area -->
+    <path d="${areaPath}" fill="url(#${gid})" clip-path="url(#clip_${k.id})"/>
+    <!-- Line -->
+    <path d="${linePath}" fill="none" stroke="${lineColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" clip-path="url(#clip_${k.id})"/>
+    <!-- End dot with halo -->
+    <circle cx="${lastX}" cy="${lastY}" r="6" fill="${lineColor}" opacity="0.15"/>
+    <circle cx="${lastX}" cy="${lastY}" r="3.5" fill="${lineColor}"/>
+    <!-- X labels -->
+    ${xLabels}
+  </svg>`;
 }
 
 // ── Blockers ──────────────────────────────────────────
@@ -1070,8 +1254,22 @@ function openNewProject(){
     <div class="form-row"><div class="form-group"><label class="form-label">Start Date</label><input class="form-input" id="np-start" type="date"/></div><div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="np-due" type="date"/></div></div>
     <div class="form-group">
       <label class="form-label">KPIs Impacted</label>
-      <div id="np-kpis-list" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:6px">
-        ${KPI_DEFS.map(k=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--content-text2)"><input type="checkbox" value="${k.id}" style="accent-color:#C8161D"/>${k.name}</label>`).join('')}
+      <div id="np-kpis-list" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;margin-bottom:6px">
+        ${KPI_DEFS.map(k=>`
+        <div>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text2)">
+            <input type="checkbox" value="${k.id}" style="accent-color:#C8161D" onchange="toggleKpiTargetRow('${k.id}')"/> ${k.name}
+          </label>
+          <div id="kpi-target-row-${k.id}" style="display:none;margin-top:6px;margin-left:20px;display:none">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <label style="font-size:11px;color:var(--text3)">Baseline</label>
+              <input class="filter-input" id="kpi-baseline-${k.id}" type="number" step="0.1" placeholder="${KPI_DEFAULTS[k.id]||0}" style="width:70px"/>
+              <label style="font-size:11px;color:var(--text3)">Project Target</label>
+              <input class="filter-input" id="kpi-ptarget-${k.id}" type="number" step="0.1" placeholder="${k.target}" style="width:70px"/>
+              <span style="font-size:10px;color:var(--text3)">${k.unit} &bull; Global target: ${k.target}${k.unit}</span>
+            </div>
+          </div>
+        </div>`).join('')}
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
         <input class="form-input" id="np-new-kpi" placeholder="Add new KPI name..." style="flex:1;font-size:12px;padding:6px 10px"/>
@@ -1085,23 +1283,48 @@ function openNewProject(){
   <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveNewProject()"><i class="ti ti-check"></i> Create Project</button></div>`);
 }
 
+function toggleKpiTargetRow(kpiId){
+  const cb=document.querySelector(`#np-kpis-list input[value="${kpiId}"]`);
+  const row=document.getElementById(`kpi-target-row-${kpiId}`);
+  if(row) row.style.display=cb?.checked?'block':'none';
+}
+
+function buildKpiTargets(){
+  const targets={};
+  document.querySelectorAll('#np-kpis-list input[type=checkbox]:checked').forEach(cb=>{
+    const id=cb.value;
+    const b=parseFloat(document.getElementById(`kpi-baseline-${id}`)?.value);
+    const t=parseFloat(document.getElementById(`kpi-ptarget-${id}`)?.value);
+    targets[id]={baseline:isNaN(b)?null:b,target:isNaN(t)?null:t};
+  });
+  return targets;
+}
+
 function addInlineKPI(){
   const inp = document.getElementById('np-new-kpi');
   const name = inp?.value?.trim();
   if(!name) return;
   const id = 'kpi_' + Date.now();
-  // Add to KPI_DEFS in memory
   KPI_DEFS.push({id, name, target:0, unit:'', direction:'higher'});
-  // Add checkbox to list
   const list = document.getElementById('np-kpis-list');
   if(list){
-    const lbl = document.createElement('label');
-    lbl.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--content-text2)';
-    lbl.innerHTML = `<input type="checkbox" value="${id}" checked style="accent-color:#C8161D"/> ${name}`;
-    list.appendChild(lbl);
+    const div = document.createElement('div');
+    div.innerHTML = `
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text2)">
+      <input type="checkbox" value="${id}" style="accent-color:#C8161D" onchange="toggleKpiTargetRow('${id}')" checked/> ${name}
+    </label>
+    <div id="kpi-target-row-${id}" style="margin-top:6px;margin-left:20px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label style="font-size:11px;color:var(--text3)">Baseline</label>
+        <input class="filter-input" id="kpi-baseline-${id}" type="number" step="0.1" style="width:70px"/>
+        <label style="font-size:11px;color:var(--text3)">Project Target</label>
+        <input class="filter-input" id="kpi-ptarget-${id}" type="number" step="0.1" style="width:70px"/>
+      </div>
+    </div>`;
+    list.appendChild(div);
   }
   inp.value = '';
-  showToast('KPI added.');
+  showToast('KPI added. Set baseline and target above.');
 }
 
 async function saveNewProject(){
@@ -1109,7 +1332,7 @@ async function saveNewProject(){
   if(!name){showToast('Project name required.','error');return;}
   const kpis=Array.from(document.querySelectorAll('#np-kpis-list input[type=checkbox]:checked')).map(o=>o.value);
   const types=Array.from(document.querySelectorAll('#np-types-list input[type=checkbox]:checked')).map(o=>o.value);
-  const data={name,type:types.length===1?types[0]:types.length>1?types:'',status:'Planning',rag:document.getElementById('np-rag').value,owner:document.getElementById('np-owner').value||'TBD',region:document.getElementById('np-region').value,priority:document.getElementById('np-pri').value,sponsor:document.getElementById('np-sponsor').value||'TBD',start:document.getElementById('np-start').value||new Date().toISOString().split('T')[0],due:document.getElementById('np-due').value||'',progress:0,description:document.getElementById('np-desc').value,kpis,impact:document.getElementById('np-impact').value,milestones:[],tasks:[],blockers:[],acceptance:document.getElementById('np-accept').value,created_by:userProfile?.name||currentUser?.email};
+  const data={name,type:types.join(','),status:'Planning',rag:document.getElementById('np-rag').value,owner:document.getElementById('np-owner').value||'TBD',region:document.getElementById('np-region').value,priority:document.getElementById('np-pri').value,sponsor:document.getElementById('np-sponsor').value||'TBD',start:document.getElementById('np-start').value||new Date().toISOString().split('T')[0],due:document.getElementById('np-due').value||'',progress:0,description:document.getElementById('np-desc').value,kpis,kpi_targets:buildKpiTargets(),impact:document.getElementById('np-impact').value,milestones:[],tasks:[],blockers:[],notes:[],acceptance:document.getElementById('np-accept').value,created_by:userProfile?.name||currentUser?.email};
   const inserted = await dbFetch('projects', {method:'POST', prefer:'return=representation', headers:{'Prefer':'return=representation'}, body:JSON.stringify(data)});
   if(!inserted){showToast('Failed to save project.','error');return;}
   const newProj = Array.isArray(inserted) ? inserted[0] : inserted;
@@ -1127,7 +1350,7 @@ function openEditProject(id){
   <div class="modal-header"><div><div class="modal-title">Edit Project</div><div class="modal-subtitle">${p.name}</div></div><button class="icon-btn" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
   <div class="modal-body">
     <div class="form-group"><label class="form-label">Project Name *</label><input class="form-input" id="ep-name" value="${p.name||''}"/></div>
-    <div class="form-row"><div class="form-group"><label class="form-label">Type (select all that apply)</label><div id="ep-types-list" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px 14px">${['Strategic','Operational','Process','Transformation','Workforce','Quality','Revenue'].map(t=>{const cur=Array.isArray(p.type)?p.type:[p.type];return`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--text2)"><input type="checkbox" value="${t}" ${cur.includes(t)?'checked':''} style="accent-color:#C8161D"/>${t}</label>`;}).join('')}</div></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="ep-pri"><option ${p.priority==='P1'?'selected':''}>P1</option><option ${p.priority==='P2'?'selected':''}>P2</option><option ${p.priority==='P3'?'selected':''}>P3</option></select></div></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Type (select all that apply)</label><div id="ep-types-list" style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px 14px">${['Strategic','Operational','Process','Transformation','Workforce','Quality','Revenue'].map(t=>{const cur=Array.isArray(p.type)?p.type:String(p.type||'').split(',').map(s=>s.trim());return`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--text2)"><input type="checkbox" value="${t}" ${cur.includes(t)?'checked':''} style="accent-color:#C8161D"/>${t}</label>`;}).join('')}</div></div><div class="form-group"><label class="form-label">Priority</label><select class="form-select" id="ep-pri"><option ${p.priority==='P1'?'selected':''}>P1</option><option ${p.priority==='P2'?'selected':''}>P2</option><option ${p.priority==='P3'?'selected':''}>P3</option></select></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Status</label><select class="form-select" id="ep-status"><option ${p.status==='Planning'?'selected':''}>Planning</option><option ${p.status==='In Progress'?'selected':''}>In Progress</option><option ${p.status==='Completed'?'selected':''}>Completed</option><option ${p.status==='On Hold'?'selected':''}>On Hold</option></select></div><div class="form-group"><label class="form-label">RAG</label><select class="form-select" id="ep-rag"><option value="G" ${p.rag==='G'?'selected':''}>Green — On Track</option><option value="A" ${p.rag==='A'?'selected':''}>Amber — At Risk</option><option value="R" ${p.rag==='R'?'selected':''}>Red — Off Track</option></select></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Owner</label><input class="form-input" id="ep-owner" value="${p.owner||''}"/></div><div class="form-group"><label class="form-label">Sponsor</label><input class="form-input" id="ep-sponsor" value="${p.sponsor||''}"/></div></div>
     <div class="form-row"><div class="form-group"><label class="form-label">Region</label><select class="form-select" id="ep-region"><option ${p.region==='Global'?'selected':''}>Global</option><option ${p.region==='US'?'selected':''}>US</option><option ${p.region==='EU'?'selected':''}>EU</option><option ${p.region==='EMEA'?'selected':''}>EMEA</option><option ${p.region==='APAC'?'selected':''}>APAC</option><option ${p.region==='LATAM'?'selected':''}>LATAM</option></select></div><div class="form-group"><label class="form-label">Business Impact</label><select class="form-select" id="ep-impact"><option ${p.impact==='Critical'?'selected':''}>Critical</option><option ${p.impact==='High'?'selected':''}>High</option><option ${p.impact==='Medium'?'selected':''}>Medium</option><option ${p.impact==='Low'?'selected':''}>Low</option></select></div></div>
@@ -1146,7 +1369,7 @@ async function saveEditProject(id){
   const types=Array.from(document.querySelectorAll('#ep-types-list input[type=checkbox]:checked')).map(o=>o.value);
   const updates={
     name,
-    type:types.length===1?types[0]:types.length>1?types:'',
+    type:types.join(','),
     status:document.getElementById('ep-status').value,
     rag:document.getElementById('ep-rag').value,
     priority:document.getElementById('ep-pri').value,
@@ -1427,6 +1650,21 @@ async function resolveBlocker(projId,blockerId){
   p.blockers=blockers; updateBadges(); showToast('Blocker resolved.'); renderView(currentView);
 }
 
+async function addProjectNote(projId){
+  const inp=document.getElementById(`note-input-${projId}`);
+  const text=inp?.value?.trim(); if(!text){showToast('Note cannot be empty.','error');return;}
+  const p=projects.find(x=>x.id===projId); if(!p) return;
+  const now=new Date();
+  const ts=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  const notes=[...(p.notes||[]),{id:'n'+Date.now(),text,author:userProfile?.name||currentUser?.email||'Unknown',ts}];
+  await dbFetch(`projects?id=eq.${projId}`,{method:'PATCH',prefer:'return=minimal',body:JSON.stringify({notes})});
+  p.notes=notes;
+  // Refresh feed in place without closing modal
+  const feed=document.getElementById(`notes-feed-${projId}`);
+  if(feed) feed.innerHTML=[...(p.notes||[])].reverse().map(n=>`<div class="note-entry"><div class="note-meta">${n.author} &bull; ${n.ts}</div><div class="note-text">${n.text.replace(/</g,'&lt;')}</div></div>`).join('');
+  inp.value=''; showToast('Note added.');
+}
+
 // ── Milestone CRUD ────────────────────────────────────
 // State for expanded milestones in project detail
 const expandedMs={};
@@ -1511,15 +1749,27 @@ async function saveAddMilestone(projId){
 
 // ── Milestone section renderer (used in project detail) ─
 function renderMsSection(p){
-  const ms=p.milestones||[];
-  if(ms.length===0) return`<div style="font-size:12px;color:var(--text3);padding:8px 0">No milestones yet.${canEdit?` <button class="btn btn-ghost" style="font-size:11px;margin-top:8px" onclick="openAddMilestone('${p.id}')"><i class="ti ti-plus"></i> Add milestone</button>`:''}</div>`;
+  const rawMs=p.milestones||[];
+  if(rawMs.length===0) return`<div style="font-size:12px;color:var(--text3);padding:8px 0">No milestones yet.${canEdit?` <button class="btn btn-ghost" style="font-size:11px;margin-top:8px" onclick="openAddMilestone('${p.id}')"><i class="ti ti-plus"></i> Add milestone</button>`:''}</div>`;
+
+  // Sort milestones: incomplete by date asc, then completed at bottom
+  const ms=[
+    ...[...rawMs.filter(m=>m.status!=='completed')].sort((a,b)=>new Date(a.date||'9999')-new Date(b.date||'9999')),
+    ...[...rawMs.filter(m=>m.status==='completed')].sort((a,b)=>new Date(a.date||'9999')-new Date(b.date||'9999'))
+  ];
 
   const statusColorMap={not_started:'#9CA3AF',on_track:'var(--green)',at_risk:'var(--amber)',blocked:'var(--red)',completed:'var(--green)'};
 
   return ms.map(m=>{
     const isOpen=expandedMs[m.id]!==false; // default open
     const mPct=calcMilestoneProgress(m);
-    const tasks=m.tasks||[];
+    // Sort tasks by due date asc, undated last
+    const tasks=[...(m.tasks||[])].sort((a,b)=>{
+      if(!a.due&&!b.due) return 0;
+      if(!a.due) return 1;
+      if(!b.due) return -1;
+      return new Date(a.due)-new Date(b.due);
+    });
     const statusColor=statusColorMap[m.status||'not_started'];
     const msClass=msRowClass(m);
     return`<div class="${msClass}" id="ms-${m.id}">
@@ -1575,7 +1825,18 @@ async function saveKPI(kpiId){
   if(isNaN(val)){showToast('Enter a valid number.','error');return;}
   const updates={id:'main',[kpiId]:val};
   await dbFetch('kpi_values', {method:'POST', headers:{'Prefer':'resolution=merge-duplicates,return=minimal'}, body:JSON.stringify(updates)});
-  kpiValues[kpiId]=val; closeModal(); showToast('KPI updated.'); renderView('kpis');
+  kpiValues[kpiId]=val;
+  // Record history point
+  const today=new Date().toISOString().split('T')[0];
+  try {
+    await dbFetch('kpi_history', {method:'POST', prefer:'return=minimal', headers:{'Prefer':'return=minimal'}, body:JSON.stringify({kpi_id:kpiId,value:val,recorded_at:today})});
+    if(!kpiHistory[kpiId]) kpiHistory[kpiId]=[];
+    // Replace today's entry if it exists, otherwise append
+    const todayIdx=kpiHistory[kpiId].findIndex(h=>h.date===today);
+    if(todayIdx>-1) kpiHistory[kpiId][todayIdx].value=val;
+    else kpiHistory[kpiId].push({value:val,date:today});
+  } catch(e){ console.warn('History write failed (table may not exist yet):', e); }
+  closeModal(); showToast('KPI updated.'); renderView('kpis');
 }
 
 function openEditUser(uid,canEditCurrent,isAdminCurrent,name='',role='',region='',portalAccess='portfolio',dept=''){
