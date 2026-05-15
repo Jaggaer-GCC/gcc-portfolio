@@ -740,7 +740,12 @@ function updateBadges(){
   const active=projects.filter(p=>p.status==='In Progress').length;
   const ab=document.getElementById('badge-active');
   ab.textContent=active; ab.style.display=active>0?'inline':'none';
-  const blocks=projects.reduce((a,p)=>a+(p.blockers?.length||0),0);
+  const blocks=projects.reduce((a,p)=>{
+    const proj=(p.blockers||[]).length;
+    const ms=(p.milestones||[]).filter(m=>m.blocker).length;
+    const tasks=(p.milestones||[]).reduce((ta,m)=>ta+(m.tasks||[]).filter(t=>t.blocker).length,0);
+    return a+proj+ms+tasks;
+  },0);
   const bb=document.getElementById('badge-blockers');
   bb.textContent=blocks; bb.style.display=blocks>0?'inline':'none';
 }
@@ -768,7 +773,12 @@ async function renderDashboard(){
   const total=projects.length,active=projects.filter(p=>p.status==='In Progress').length;
   const completed=projects.filter(p=>p.status==='Completed').length;
   const atRisk=projects.filter(p=>p.rag==='R'||p.rag==='A').length;
-  const allBlocks=projects.reduce((a,p)=>a+(p.blockers?.length||0),0);
+  const allBlocks=projects.reduce((a,p)=>{
+    const proj=(p.blockers||[]).length;
+    const ms=(p.milestones||[]).filter(m=>m.blocker).length;
+    const tasks=(p.milestones||[]).reduce((ta,m)=>ta+(m.tasks||[]).filter(t=>t.blocker).length,0);
+    return a+proj+ms+tasks;
+  },0);
   const overdueMs=projects.flatMap(p=>(p.milestones||[]).filter(m=>m.status!=='completed'&&isOverdue(m.date))).length;
   const upMs=projects.flatMap(p=>(p.milestones||[]).filter(m=>m.status!=='completed').map(m=>({...m,pn:p.name}))).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,6);
   return`
@@ -909,8 +919,8 @@ function openProjectDetail(id){
         <div class="sp-row"><div class="sp-label">Milestones</div><div class="sp-value">${(p.milestones||[]).filter(m=>m.status==='completed').length}/${(p.milestones||[]).length} done</div></div>
       </div>
       <div class="sp-panel">
-        <div class="meta-label" style="margin-bottom:8px;color:${(p.blockers||[]).length>0?'var(--red)':'var(--text3)'}">Project Blockers (${(p.blockers||[]).length})</div>
-        ${(p.blockers||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No project-level blockers.</div>':(p.blockers||[]).map(b=>`<div style="background:var(--red-bg);border:1px solid rgba(239,83,80,.2);border-radius:6px;padding:8px 10px;margin-bottom:6px"><div style="font-size:12px;color:var(--red);font-weight:600">${b.title}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${b.desc}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Owner: ${b.owner} &bull; Raised: ${b.raised}</div>${canEdit?`<button class="btn btn-ghost" style="margin-top:6px;font-size:10px" onclick="resolveBlocker('${id}','${b.id}')"><i class="ti ti-check"></i> Resolve</button>`:''}</div>`).join('')}
+        <div class="meta-label" style="margin-bottom:8px;color:${(p.blockers||[]).length>0?'var(--red)':'var(--text3)'}">Project-Level Blockers (${(p.blockers||[]).length})</div>
+        ${(p.blockers||[]).length===0?'<div style="font-size:11px;color:var(--text3)">No project-level blockers. Task and milestone blockers appear inline above.</div>':(p.blockers||[]).map(b=>`<div style="background:var(--red-bg);border:1px solid rgba(239,83,80,.2);border-radius:6px;padding:8px 10px;margin-bottom:6px"><div style="font-size:12px;color:var(--red);font-weight:600">${b.title}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${b.desc}</div><div style="font-size:10px;color:var(--text3);margin-top:4px">Owner: ${b.owner} &bull; Raised: ${b.raised}</div>${canEdit?`<button class="btn btn-ghost" style="margin-top:6px;font-size:10px" onclick="resolveBlocker('${id}','${b.id}')"><i class="ti ti-check"></i> Resolve</button>`:''}</div>`).join('')}
         ${canEdit?`<button class="btn btn-ghost" style="margin-top:8px;font-size:11px" onclick="openAddBlocker('${id}')"><i class="ti ti-plus"></i> Add project blocker</button>`:''}
       </div>
       <div class="sp-panel">
