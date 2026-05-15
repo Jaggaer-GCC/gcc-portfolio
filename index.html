@@ -648,17 +648,44 @@ async function saveNewPassword(){
   if(pass!==confirm){errEl.textContent='Passwords do not match.';errEl.style.display='block';return;}
   const btn=document.getElementById('cp-save-btn');
   if(btn){btn.disabled=true;btn.textContent='Saving...';}
+  // Step 1: Update auth password
   const {error}=await sb.auth.updateUser({password:pass});
   if(error){
-    errEl.textContent='Error: '+error.message;
+    errEl.textContent='Error updating password: '+error.message;
     errEl.style.display='block';
     if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Set Password';}
     return;
   }
-  await dbFetch('profiles?id=eq.'+currentUser.id, {method:'PATCH', prefer:'return=minimal', body:JSON.stringify({must_change_password:false})});
+  // Step 2: Clear the flag in profiles — try both anon REST and Supabase client
+  let flagCleared=false;
+  try {
+    const res=await fetch(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+currentUser.id, {
+      method:'PATCH',
+      headers:{
+        'apikey':SUPABASE_ANON_KEY,
+        'Authorization':'Bearer '+(await sb.auth.getSession())?.data?.session?.access_token||SUPABASE_ANON_KEY,
+        'Content-Type':'application/json',
+        'Prefer':'return=minimal'
+      },
+      body:JSON.stringify({must_change_password:false})
+    });
+    if(res.ok||res.status===204) flagCleared=true;
+  } catch(e){ console.warn('Profile PATCH failed:',e); }
+  if(!flagCleared){
+    // Fallback: use Supabase JS client
+    try {
+      const {error:e2}=await sb.from('profiles').update({must_change_password:false}).eq('id',currentUser.id);
+      if(!e2) flagCleared=true;
+    } catch(e){ console.warn('Supabase client PATCH also failed:',e); }
+  }
+  if(!flagCleared){
+    errEl.textContent='Password was updated but we could not save your profile flag. Please contact your admin to clear the must_change_password flag on your account.';
+    errEl.style.display='block';
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Set Password';}
+    return;
+  }
+  // Step 3: Update local state
   if(userProfile) userProfile.must_change_password=false;
-  // Restore modal overlay click behaviour
-  
   sessionStorage.removeItem('pw-prompt-shown');
   closeModal();
   showToast('Password updated. Welcome to PULSE.');
